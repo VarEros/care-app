@@ -31,13 +31,22 @@ export default function App() {
     });
   }
 
+  function toggleTodo(todo: Schema["Todo"]["type"]) {
+    client.models.Todo.update({
+      ...todo,
+      isDone: !todo.isDone,
+    });
+  }
+
   return (
     <main>
       <h1>My todos</h1>
       <button onClick={createTodo}>+ new</button>
       <ul>
         {todos.map((todo) => (
-          <li key={todo.id}>{todo.content}</li>
+          <li key={todo.id}
+              onClick={() => toggleTodo(todo)}
+          >{todo.content} {todo.isDone ? "DONE": "UNDONE"}</li>
         ))}
       </ul>
       <div>
