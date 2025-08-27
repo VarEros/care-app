@@ -13,44 +13,45 @@ Amplify.configure(outputs);
 const client = generateClient<Schema>();
 
 export default function App() {
-  const [todos, setTodos] = useState<Array<Schema["Todo"]["type"]>>([]);
+  const [doctors, setDoctors] = useState<Array<Schema["Doctor"]["type"]>>([]);
 
-  function listTodos() {
-    client.models.Todo.observeQuery().subscribe({
-      next: (data) => setTodos([...data.items]),
+  function listDoctors() {
+    client.models.Doctor.observeQuery().subscribe({
+      next: (data) => setDoctors([...data.items]),
     });
   }
 
   useEffect(() => {
-    listTodos();
+    listDoctors();
   }, []);
 
-  function createTodo() {
-    client.models.Todo.create({
-      content: window.prompt("Todo content"),
+  function createDoctor() {
+    client.models.Doctor.create({
+      name: window.prompt("Doctor name") ?? "John",
+      specialty: window.prompt("Doctor speciality"),
     });
   }
 
-  function toggleTodo(todo: Schema["Todo"]["type"]) {
-    client.models.Todo.update({
-      ...todo,
-      isDone: !todo.isDone,
+  function toggleDoctor(doctor: Schema["Doctor"]["type"]) {
+    client.models.Doctor.update({
+      id: doctor.id,
+      specialty: window.prompt("Doctor speciality")
     });
   }
 
   return (
     <main>
-      <h1>My todos</h1>
-      <button onClick={createTodo}>+ new</button>
+      <h1>My doctors</h1>
+      <button onClick={createDoctor}>+ new</button>
       <ul>
-        {todos.map((todo) => (
-          <li key={todo.id}
-              onClick={() => toggleTodo(todo)}
-          >{todo.content} {todo.isDone ? "DONE": "UNDONE"}</li>
+        {doctors.map((doctor) => (
+          <li key={doctor.id}
+              onClick={() => toggleDoctor(doctor)}
+          >{doctor.name} especialista en  {doctor.specialty}</li>
         ))}
       </ul>
       <div>
-        🥳 App successfully hosted. Try creating a new todo.
+        🥳 App successfully hosted. Try creating a new doctor.
         <br />
         <a href="https://docs.amplify.aws/nextjs/start/quickstart/nextjs-app-router-client-components/">
           Review next steps of this tutorial.
