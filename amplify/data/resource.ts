@@ -1,4 +1,5 @@
 import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
+import { postConfirmation } from "../auth/post-confirmation/resource";
 
 /*== STEP 1 ===============================================================
 The section below creates a Todo database table with a "content" field. Try
@@ -7,18 +8,27 @@ specifies that any user authenticated via an API key can "create", "read",
 "update", and "delete" any "Todo" records.
 =========================================================================*/
 const schema = a.schema({
+  UserProfile: a
+      .model({
+        id: a.id().required(),
+        email: a.string()
+      })
+      .authorization((allow) => [
+        allow.ownerDefinedIn("id"),
+      ]),
   Doctor: a
     .model({
       id: a.id().required(),
+      userId: a.id().required(),  // foreign key
       name: a.string().required(),
       specialty: a.string(),
       patients: a.hasMany("Patient", "doctorId"), // 1 doctor → many patients
     })
     .authorization((allow) => [allow.publicApiKey()]),
-
   Patient: a
     .model({
       id: a.id().required(),
+      userId: a.id().required(),  // foreign key
       doctorId: a.id().required(),  // foreign key
       name: a.string().required(),
       age: a.integer(),
@@ -26,7 +36,8 @@ const schema = a.schema({
       doctor: a.belongsTo("Doctor", "doctorId"), // patient → doctor link
     })
     .authorization((allow) => [allow.publicApiKey()]),
-});
+})
+  .authorization((allow) => [allow.resource(postConfirmation)]);
 
 export type Schema = ClientSchema<typeof schema>;
 
