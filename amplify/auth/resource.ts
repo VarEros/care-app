@@ -19,6 +19,13 @@ export const auth = defineAuth({
       required: true,
       mutable: true,
     },
+    birthdate: {
+      required: true
+    },
+    phoneNumber: {
+      required: false,
+      mutable: true,
+    }
   },
   triggers: {
     postConfirmation
