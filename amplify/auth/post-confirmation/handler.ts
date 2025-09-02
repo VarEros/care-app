@@ -15,10 +15,11 @@ const client = generateClient<Schema>();
 
 export const handler: PostConfirmationTriggerHandler = async (event) => {
   await client.models.Patient.create({
-      userId: event.userName,
+      id: event.userName,
       email: event.request.userAttributes.email,
       name: event.request.userAttributes.name,
       birthdate: event.request.userAttributes.birthdate,
+      gender: event.request.userAttributes.gender
   });
 
   return event;
