@@ -5,20 +5,17 @@ import outputs from "@/amplify_outputs.json";
 import { Authenticator } from "@aws-amplify/ui-react";
 import "@aws-amplify/ui-react/styles.css";
 
-Amplify.configure(outputs);
-
 export default function App() {
 
   return (
-    <Authenticator>
-      {({ signOut, user }) => (
-        <div>
-          <button onClick={signOut} className="sign-out-button">
-            Sign Out
-          </button>
-          <main>{user ? <div>Welcome, {user.username}</div> : null}</main>
-        </div>
-      )}
-    </Authenticator>
+    <main>
+      <div>
+        🥳 App successfully hosted. Try creating a new doctor.
+        <br />
+        <a href="https://docs.amplify.aws/nextjs/start/quickstart/nextjs-app-router-client-components/">
+          Review next steps of this tutorial.
+        </a>
+      </div>
+    </main>
   );
 }
