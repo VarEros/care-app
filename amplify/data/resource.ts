@@ -1,5 +1,10 @@
-import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
+import { type ClientSchema, a, defineData, defineFunction } from "@aws-amplify/backend";
 import { postConfirmation } from "../auth/post-confirmation/resource";
+
+export const createDoctorWithUserHandler = defineFunction({
+  name: 'create-doctor-with-user',
+  entry: './createDoctorWithUser/handler.ts',
+})
 
 export const schema = a.schema({
   Doctor: a
@@ -7,24 +12,27 @@ export const schema = a.schema({
       name: a.string().required(),
       email: a.email().required(),
       birthdate: a.date().required(),
-      gender: a.string().required(),
+      gender: a.enum(["Masculino", "Femenino", "Otro"]),
       specialty: a.string(),
       status: a.enum(["Activo", "Inactivo"]),
       appointments: a.hasMany("Appointment", "doctorId"), // relación con Appointment
     })
     .authorization((allow) => [
+      allow.groups(["Admins"]),
       allow.ownerDefinedIn("id"),
     ]),
 
   Patient: a
     .model({
+      cedula: a.string().required(),
       email: a.email(),
       name: a.string().required(),
       birthdate: a.date().required(),
-      gender: a.string().required(),
+      gender: a.enum(["Masculino", "Femenino", "Otro"]),
       appointments: a.hasMany("Appointment", "patientId"), // relación con Appointment
       recipes: a.hasMany("Recipe", "patientId"), // relación con Recipe
     })
+    .secondaryIndexes((index) => [index("cedula")])
     .authorization((allow) => [
       allow.ownerDefinedIn("id"),
       allow.groups(["Doctors"])
@@ -46,6 +54,8 @@ export const schema = a.schema({
       index("patientId").sortKeys(["status", "scheduledOn"])
     ])
     .authorization((allow) => [
+      allow.groups(["Doctors"]),
+      allow.groups(["Patients"]),
       allow.ownerDefinedIn("doctorId"), // el doctor asignado puede ver
       allow.ownerDefinedIn("patientId"), // el paciente asignado puede ver
     ]),
@@ -88,17 +98,29 @@ export const schema = a.schema({
       allow.ownerDefinedIn("patientId"), // el paciente asignado puede ver
       //allow.ownerDefinedIn("consultation.appointment.doctorId"), // el doctor asignado puede ver
     ]),
+    createDoctorWithUser: a
+      .mutation()
+      .arguments({
+        name: a.string().required(),
+        email: a.string().required(),
+        birthdate: a.date().required(),
+        gender: a.string().required(),
+        specialty: a.string(),
+      })
+      .returns(a.ref("Doctor"))
+      .authorization((allow) => [allow.groups(["Admins"])])
+      .handler(a.handler.function(createDoctorWithUserHandler)), // only admins create doctors 
 })
-.authorization((allow) => [allow.resource(postConfirmation)]);
+.authorization((allow) => [allow.resource(postConfirmation), allow.resource(createDoctorWithUserHandler)]);
 
 export type Schema = ClientSchema<typeof schema>;
 
 export const data = defineData({
   schema,
   authorizationModes: {
-    defaultAuthorizationMode: "apiKey",
+    defaultAuthorizationMode: "userPool",
     apiKeyAuthorizationMode: {
       expiresInDays: 30,
     },
   },
-});
+}); 

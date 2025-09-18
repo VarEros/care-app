@@ -17,7 +17,8 @@ export default function Sidebar() {
     (async () => {
       try {
         // 🔑 Auth v6: use fetchAuthSession to access JWT tokens
-        const { tokens } = await fetchAuthSession();
+        const { tokens } = await fetchAuthSession();   
+        console.log(tokens?.idToken?.payload["cognito:groups"]);
 
         // Read groups from the access token payload; might be undefined
         const gs =
@@ -71,7 +72,7 @@ export default function Sidebar() {
   }, [groups]);
 
   return (
-    <aside className="w-64 h-screen bg-gray-800 text-white p-4">
+    <aside className="w-64 h-screen bg-slate-900 text-white p-4">
       <h2 className="text-lg font-bold mb-4">Menú</h2>
       <ul className="space-y-2">
         {items.map((item) => (
