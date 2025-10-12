@@ -1,5 +1,7 @@
 import { defineAuth } from "@aws-amplify/backend";
 import { postConfirmation } from './post-confirmation/resource';
+import { createDoctorWithUserHandler } from '../data/resource'
+import { preSignUp } from './pre-sign-up/resource';
 
 /**
  * Define and configure your auth resource
@@ -9,7 +11,6 @@ export const auth = defineAuth({
   loginWith: {
     email: true,
   },
-  //groups: ["doctors", "patients"],
   userAttributes: {
     email: {
       required: true,
@@ -19,8 +20,25 @@ export const auth = defineAuth({
       required: true,
       mutable: true,
     },
+    birthdate: {
+      required: true
+    },
+    phoneNumber: {
+      required: false,
+      mutable: true,
+    }
   },
   triggers: {
-    postConfirmation
-  }
+    postConfirmation,
+    preSignUp
+  },
+  groups: [
+    'Admins',
+    'Doctors',
+    'Patients'
+  ],
+  access: (allow) => [
+    allow.resource(postConfirmation).to(["addUserToGroup"]),
+    allow.resource(createDoctorWithUserHandler).to(["addUserToGroup", "createUser"])
+  ],
 });

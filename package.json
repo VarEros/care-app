@@ -10,11 +10,23 @@
   },
   "dependencies": {
     "@aws-amplify/backend-function": "^1.14.1",
-    "@aws-amplify/ui-react": "^6.5.5",
-    "aws-amplify": "^6.6.6",
-    "next": "14.2.10",
+    "@aws-amplify/ui-react": "^6.12.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.879.0",
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-label": "^2.1.7",
+    "@radix-ui/react-select": "^2.2.6",
+    "@radix-ui/react-slot": "^1.2.3",
+    "@tailwindcss/postcss": "^4.1.13",
+    "aws-amplify": "^6.15.5",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.542.0",
+    "next": "^15.5.2",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "react-hook-form": "^7.62.0",
+    "tailwind-merge": "^3.3.1",
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@aws-amplify/backend": "^1.16.1",
@@ -22,9 +34,12 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "autoprefixer": "^10.4.21",
     "aws-cdk-lib": "^2",
     "constructs": "^10.3.0",
     "esbuild": "^0.23.1",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.14",
     "tsx": "^4.19.0",
     "typescript": "^5.6.2"
   }

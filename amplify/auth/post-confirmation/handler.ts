@@ -4,6 +4,10 @@ import { Amplify } from "aws-amplify";
 import { generateClient } from "aws-amplify/data";
 import { getAmplifyDataClientConfig } from '@aws-amplify/backend/function/runtime';
 import { env } from "$amplify/env/post-confirmation";
+import {
+  CognitoIdentityProviderClient,
+  AdminAddUserToGroupCommand,
+} from "@aws-sdk/client-cognito-identity-provider";
 
 const { resourceConfig, libraryOptions } = await getAmplifyDataClientConfig(
   env
@@ -11,13 +15,26 @@ const { resourceConfig, libraryOptions } = await getAmplifyDataClientConfig(
 
 Amplify.configure(resourceConfig, libraryOptions);
 
-const client = generateClient<Schema>();
+const schemaClient = generateClient<Schema>();
+const cognitoClient = new CognitoIdentityProviderClient({});
 
 export const handler: PostConfirmationTriggerHandler = async (event) => {
-  await client.models.UserProfile.create({
+  await schemaClient.models.Patient.create({
       id: event.userName,
-      email: event.request.userAttributes.email
+      cedula: 'sx', // using sub as unique identifier
+      email: event.request.userAttributes.email,
+      name: event.request.userAttributes.name,
+      birthdate: event.request.userAttributes.birthdate,
+      gender: event.request.userAttributes.gender as Schema["Patient"]["type"]["gender"],
   });
+
+  await cognitoClient.send(
+    new AdminAddUserToGroupCommand({
+      UserPoolId: event.userPoolId,
+      Username: event.userName,
+      GroupName: "Patients", // 👈 auto-assign group
+    })
+  );
 
   return event;
 };
