@@ -8,6 +8,7 @@ import { preSignUp } from './pre-sign-up/resource';
  * @see https://docs.amplify.aws/gen2/build-a-backend/auth
  */
 export const auth = defineAuth({
+  name: "care-app",
   loginWith: {
     email: true,
   },
