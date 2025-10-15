@@ -1,11 +1,10 @@
 import { type ClientSchema, a, defineData, defineFunction } from "@aws-amplify/backend";
 import { postConfirmation } from "../auth/post-confirmation/resource";
 
-// export const createDoctorWithUserHandler = defineFunction({
-//   name: 'create-doctor-with-user',
-//   entry: './createDoctorWithUser/handler.ts',
-
-// })
+export const createDoctorWithUserHandler = defineFunction({
+  name: 'create-doctor-with-user',
+  entry: './createDoctorWithUser/handler.ts',
+})
 
 export const schema = a.schema({
   Doctor: a
@@ -112,12 +111,13 @@ export const schema = a.schema({
     //   .authorization((allow) => [allow.groups(["Admins"])])
     //   .handler(a.handler.function(createDoctorWithUserHandler)), // only admins create doctors 
 })
-.authorization((allow) => [allow.resource(postConfirmation)]);
-  // allow.resource(createDoctorWithUserHandler)]);
+.authorization((allow) => [allow.resource(postConfirmation),
+  allow.resource(createDoctorWithUserHandler)]);
 
 export type Schema = ClientSchema<typeof schema>;
 
 export const data = defineData({
+  name: "care-app",
   schema,
   authorizationModes: {
     defaultAuthorizationMode: "userPool",
