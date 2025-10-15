@@ -50,29 +50,29 @@ export default function DoctorsPage() {
     
     if (!name || !email || !birthdate || !gender) return;
 
-    try {
-      const { data, errors } = await client.mutations.createDoctorWithUser({
-        name,
-        email,
-        birthdate,
-        gender,
-        specialty
-      });
+    // try {
+    //   const { data, errors } = await client.mutations.createDoctorWithUser({
+    //     name,
+    //     email,
+    //     birthdate,
+    //     gender,
+    //     specialty
+    //   });
 
-      if (errors) {
-        console.error("Error creating doctor:", errors);
-      } else if (data) {
-        setDoctors((prev) => [...prev, data]);
-        // reset form
-        setName("");
-        setEmail("");
-        setBirthdate("");
-        setGender("Masculino");
-        setSpecialty("");
-      }
-    } catch (err) {
-      console.error("Create failed:", err);
-    }
+    //   if (errors) {
+    //     console.error("Error creating doctor:", errors);
+    //   } else if (data) {
+    //     setDoctors((prev) => [...prev, data]);
+    //     // reset form
+    //     setName("");
+    //     setEmail("");
+    //     setBirthdate("");
+    //     setGender("Masculino");
+    //     setSpecialty("");
+    //   }
+    // } catch (err) {
+    //   console.error("Create failed:", err);
+    // }
   };
 
   if (loading) return <p className="p-4">Loading doctors...</p>;

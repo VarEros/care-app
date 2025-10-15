@@ -1,6 +1,6 @@
 import { defineAuth } from "@aws-amplify/backend";
 import { postConfirmation } from './post-confirmation/resource';
-import { createDoctorWithUserHandler } from '../data/resource'
+// import { createDoctorWithUserHandler } from '../data/resource'
 import { preSignUp } from './pre-sign-up/resource';
 
 /**
@@ -40,6 +40,6 @@ export const auth = defineAuth({
   ],
   access: (allow) => [
     allow.resource(postConfirmation).to(["addUserToGroup"]),
-    allow.resource(createDoctorWithUserHandler).to(["addUserToGroup", "createUser"])
+    // allow.resource(createDoctorWithUserHandler).to(["addUserToGroup", "createUser"])
   ],
 });
