@@ -6,6 +6,7 @@ import "@aws-amplify/ui-react/styles.css";
 import { Amplify } from "aws-amplify";
 import outputs from "@/amplify_outputs.json";
 import Sidebar from "../components/sidebar";
+import { Toaster } from "@/components/ui/sonner"
 
 Amplify.configure(outputs);
 
@@ -19,6 +20,8 @@ export default function RootLayout({
       <body>
         <Authenticator>
           {({ signOut, user }) => (
+            <>
+            <Toaster />
             <div className="flex">
               {/* Left side menu filtered by Cognito groups */}
               <Sidebar />
@@ -37,6 +40,7 @@ export default function RootLayout({
                 <main className="p-6">{children}</main>
               </div>
             </div>
+            </>
           )}
         </Authenticator>
       </body>

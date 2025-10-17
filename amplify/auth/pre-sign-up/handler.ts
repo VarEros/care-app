@@ -11,7 +11,7 @@ export const handler: PreSignUpTriggerHandler = async (event) => {
 
   // you must be 13 years or older
   if (!isOlderThan(birthdate, 13)) {
-    throw new Error("You must be 13 years or older to use this site")
+    throw new Error("Debes ser mayor a 13 años para crear una cuenta.")
   }
 
   return event

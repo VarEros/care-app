@@ -14,12 +14,14 @@ export const schema = a.schema({
       birthdate: a.date().required(),
       gender: a.enum(["Masculino", "Femenino", "Otro"]),
       specialty: a.string(),
+      businessHours: a.json(),
       status: a.enum(["Activo", "Inactivo"]),
       appointments: a.hasMany("Appointment", "doctorId"), // relación con Appointment
     })
     .authorization((allow) => [
-      allow.groups(["Admins"]),
-      allow.ownerDefinedIn("id"),
+      allow.group("Admins").to(["read", "create", "update"]),
+      allow.group("Patients").to(["read"]),
+      allow.ownerDefinedIn("id").to(["read", "create", "update"])
     ]),
 
   Patient: a
@@ -34,8 +36,8 @@ export const schema = a.schema({
     })
     .secondaryIndexes((index) => [index("cedula")])
     .authorization((allow) => [
-      allow.ownerDefinedIn("id"),
-      allow.groups(["Doctors"])
+      allow.ownerDefinedIn("id").to(["read", "create", "update"]), // patient
+      allow.group("Doctors").to(["read"])
     ]),
 
   Appointment: a
@@ -47,35 +49,33 @@ export const schema = a.schema({
       status: a.enum(["Programada", "Completada", "Cancelada"]),
       doctor: a.belongsTo("Doctor", "doctorId"),
       patient: a.belongsTo("Patient", "patientId"),
-      consultation: a.hasOne("Consultation", "appointmentId"),
+      consultation: a.hasOne("Consultation", ["doctorId", "appointmentScheduledOn"]),
     })
+    .identifier(["doctorId", "scheduledOn"])
     .secondaryIndexes((index) => [
-      index("doctorId").sortKeys(["status","scheduledOn"]),
-      index("patientId").sortKeys(["status", "scheduledOn"])
+      index("patientId").sortKeys(["scheduledOn"])
     ])
     .authorization((allow) => [
-      allow.groups(["Doctors"]),
-      allow.groups(["Patients"]),
-      allow.ownerDefinedIn("doctorId"), // el doctor asignado puede ver
-      allow.ownerDefinedIn("patientId"), // el paciente asignado puede ver
+      allow.ownerDefinedIn("doctorId").to(["read", "create", "update"]), // patient or doctor
+      allow.group("Patients").to(["read", "create"])
     ]),
 
   Consultation: a
     .model({
-      appointmentId: a.id().required(), // FK → Appointment
+      doctorId: a.id().required(), // FK → Appointment
+      appointmentScheduledOn: a.datetime().required(),
       reason: a.string(),
       diagnosis: a.string(),
       treatment: a.string(),
       observations: a.string(),
       startedAt: a.datetime().required(),
       endedAt: a.datetime(),
-      appointment: a.belongsTo("Appointment", "appointmentId"),
+      appointment: a.belongsTo("Appointment", ["doctorId", "appointmentScheduledOn"]),
       recipes: a.hasMany("Recipe", "consultationId"), // relación con Recipe
     })
     .authorization((allow) => [
-      allow.groups(["Doctors"]),
-      //allow.ownerDefinedIn("appointment.doctorId"), // el doctor asignado puede ver
-      //allow.ownerDefinedIn("appointment.patientId"), // el paciente asignado puede ver
+      allow.group("Patients").to(["read"]),
+      allow.ownerDefinedIn("doctorId").to(["read", "create", "update"]) // doctor
     ]),
 
     Recipe: a
@@ -89,27 +89,26 @@ export const schema = a.schema({
       notes: a.string(),
       consultation: a.belongsTo("Consultation", "consultationId"),
       patient: a.belongsTo("Patient", "patientId"),
-      createdAt: a.datetime()
+      createdAt: a.datetime().required()
     })
-    .secondaryIndexes((index) => [
-      index("patientId").sortKeys(["createdAt"])
-    ])
+    .identifier(["patientId", "createdAt"])
     .authorization((allow) => [
-      allow.ownerDefinedIn("patientId"), // el paciente asignado puede ver
-      //allow.ownerDefinedIn("consultation.appointment.doctorId"), // el doctor asignado puede ver
+      allow.ownerDefinedIn("patientId").to(["read"]), // doctor
+      allow.group("Doctors").to(["read", "create", "update"]),
     ]),
-    // createDoctorWithUser: a
-    //   .mutation()
-    //   .arguments({
-    //     name: a.string().required(),
-    //     email: a.string().required(),
-    //     birthdate: a.date().required(),
-    //     gender: a.string().required(),
-    //     specialty: a.string(),
-    //   })
-    //   .returns(a.ref("Doctor"))
-    //   .authorization((allow) => [allow.groups(["Admins"])])
-    //   .handler(a.handler.function(createDoctorWithUserHandler)), // only admins create doctors 
+
+    createDoctorWithUser: a
+      .mutation()
+      .arguments({
+        name: a.string().required(),
+        email: a.string().required(),
+        birthdate: a.date().required(),
+        gender: a.string().required(),
+        specialty: a.string(),
+      })
+      .returns(a.ref("Doctor"))
+      .authorization((allow) => [allow.groups(["Admins"])])
+      .handler(a.handler.function(createDoctorWithUserHandler)), // only admins create doctors 
 })
 .authorization((allow) => [allow.resource(postConfirmation),
   allow.resource(createDoctorWithUserHandler)]);

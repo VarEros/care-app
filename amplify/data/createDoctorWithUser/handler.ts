@@ -19,7 +19,7 @@ const cognitoClient = new CognitoIdentityProviderClient({});
 export const handler = async (event: any) => {
   const { name, email, birthdate, gender, specialty } = event.arguments;
   console.log("createDoctorWithUser event:", event);
-  const userpool_id = env.AMPLIFY_AUTH_USERPOOL_ID;
+  const userpool_id = env.CARE_APP_USERPOOL_ID;
 
   try {
     // 1. Create Cognito user
