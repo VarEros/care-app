@@ -340,6 +340,7 @@ export default function AppointmentsPage() {
                     numberOfMonths={2}
                     selected={date}
                     onSelect={setDate}
+                    disabled={(day) => day < new Date(new Date().setHours(0, 0, 0, 0))}
                     className="rounded-lg border"
                   />
 
