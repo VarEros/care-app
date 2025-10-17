@@ -169,7 +169,7 @@ export default function DoctorsPage() {
         {/* Dialog for adding new doctor */}
         <Dialog open={openDialog} onOpenChange={setOpenDialog}>
           <DialogTrigger asChild>
-            <Button>Agregar Doctor</Button>
+            <Button className="w-[200px]">Agregar Doctor</Button>
           </DialogTrigger>
 
           <DialogContent className="sm:max-w-[425px]">

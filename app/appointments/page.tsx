@@ -73,8 +73,9 @@ const appointmentSchema = z.object({
 type AppointmentFormValues = z.infer<typeof appointmentSchema>
 
 export default function AppointmentsPage() {
-  const [appointments, setAppointments] = useState<Array<Schema["Appointment"]["type"]>>([])
+  const [appointments, setAppointments] = useState<Array<Schema["Appointment"]["updateType"]>>([])
   const [doctors, setDoctors] = useState<Array<Schema["Doctor"]["updateType"]>>([])
+  const [specialties, setSpecialties] = useState<string[]>([])
   const [specialty, setSpecialty] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [openDialog, setOpenDialog] = useState(false)
@@ -97,13 +98,32 @@ export default function AppointmentsPage() {
   useEffect(() => {
     const loadAppointments = async () => {
       try {
-        const { data, errors } = await client.models.Appointment.list()
-        if (errors) console.error(errors)
-        else setAppointments(data)
+        // const { data, errors } = await client.models.Appointment.list()
+        setTimeout(() => {
+          const specialties = [
+            "Cardiologia",
+            "Ortopedia"
+          ]
+          setSpecialties(specialties)
+          const appointments = [
+            {
+              doctorId: "1",
+              scheduledOn: "20 de Octubre, 2025 - 8:30PM"
+            },
+            {
+              doctorId: "1",
+              scheduledOn: "25 de Octubre, 2025 - 2:30PM"
+            }
+          ]
+          setAppointments(appointments)
+          setLoading(false)
+        }, 2000);
+        // if (errors) console.error(errors)
+        // else setAppointments(data)
       } catch (err) {
         console.error("Failed to load appointments:", err)
       } finally {
-        setLoading(false)
+        // setLoading(false)
       }
     }
 
@@ -115,13 +135,29 @@ export default function AppointmentsPage() {
     if (!specialty) return
     const loadDoctors = async () => {
       try {
-        const { data, errors } = await client.models.Doctor.list({filter: {status: {eq: "Activo"}, specialty: {eq: specialty ?? undefined}}, selectionSet: ["id", "name", "email"]})
-        if (errors) console.error(errors)
-        else setDoctors(data)
+        // const { data, errors } = await client.models.Doctor.list({filter: {status: {eq: "Activo"}, specialty: {eq: specialty ?? undefined}}, selectionSet: ["id", "name", "email"]})
+        setTimeout(() => {
+          const doctors = [
+            {
+              id: "1",
+              name: "Juan Perez",
+              email: "juanperez@gmail.com",
+              specialty: "Neurologia"
+            },
+            {
+              id: "2",
+              name: "Juan Bolivar",
+              email: "juanbolivar@gmail.com"
+            }
+          ];
+          setDoctors(doctors);
+        }, 2000)
+        // if (errors) console.error(errors)
+        // else setDoctors(data)
       } catch (err) {
         console.error("Failed to load appointments:", err)
       } finally {
-        setLoading(false)
+        // setLoading(false)
       }
     }
 
@@ -170,116 +206,141 @@ export default function AppointmentsPage() {
         {/* Dialog for adding new Cita */}
         <Dialog open={openDialog} onOpenChange={setOpenDialog}>
           <DialogTrigger asChild>
-            <Button>Agregar Cita</Button>
+            <Button className="w-[200px]">Agendar Cita</Button>
           </DialogTrigger>
 
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Registro de Cita</DialogTitle>
+              <DialogTitle>Creacion de Nueva Cita</DialogTitle>
               <DialogDescription>
                 Llena el formulario para crear un doctor junto a su perfil de usuario, el nuevo doctor podra entrar al sistema sin necesidad de introduccir contraseña.
               </DialogDescription>
             </DialogHeader>
-
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                {/* Name */}
-                <FormField
-                  control={form.control}
-                  name="doctorId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Doctor</FormLabel>
-                      <FormControl>
-                        <Popover open={openDoctors} onOpenChange={setOpenDialog}>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              aria-expanded={openDialog}
-                              className="w-[200px] justify-between"
-                            >
-                              {field.value
-                                ? doctors.find((d) => d.id === field.value)?.name
-                                : "Selecciona una doctor..."}
-                              <ChevronsUpDown className="opacity-50" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-[200px] p-0">
-                            <Command>
-                              <CommandInput placeholder="Busca doctores..." className="h-9" />
-                              <CommandList>
-                                <CommandEmpty>Doctor no encontrado</CommandEmpty>
-                                <CommandGroup>
-                                  {doctors.map((d) => (
-                                    <CommandItem
-                                      key={d.id}
-                                      value={d.id}
-                                      onSelect={(currentValue) => {
-                                        field.onChange(currentValue === field.value ? "" : currentValue)
-                                        setOpenDoctors(false)
-                                      }}
-                                    >
-                                      {d.name}
-                                      {/* <Check
-                                        className={cn(
-                                          "ml-auto",
-                                          value === framework.value ? "opacity-100" : "opacity-0"
-                                        )}
-                                      /> */}
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                
-                <DialogFooter>
-                  <Button type="submit" className="w-full" disabled={submitting}>
-                    {submitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Guardando...
-                      </>
-                    ) : (
-                      "Guardar Doctor"
+            <Popover open={openSpecialties} onOpenChange={setOpenSpecialties}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openSpecialties}
+                  className="justify-between"
+                >
+                  {specialty || "Selecciona un especialidad..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="p-0">
+                <Command>
+                  <CommandInput placeholder="Busca especialidad..." className="h-9" />
+                  <CommandList>
+                    <CommandEmpty>Especialidad no encontrada</CommandEmpty>
+                    <CommandGroup>
+                      {specialties.map((d, index) => (
+                        <CommandItem
+                          key={index}
+                          value={d}
+                          onSelect={(currentValue) => {
+                            setSpecialty(currentValue)
+                            setOpenSpecialties(false)
+                          }}
+                        >
+                          {d}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            {specialty && (
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  {/* Name */}
+                  <FormField
+                    control={form.control}
+                    name="doctorId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Doctor</FormLabel>
+                        <FormControl>
+                          <Popover open={openDoctors} onOpenChange={setOpenDoctors}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={openDoctors}
+                                className="justify-between"
+                              >
+                                {field.value
+                                  ? doctors.find((d) => d.id === field.value)?.name
+                                  : "Selecciona un doctor..."}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="p-0">
+                              <Command>
+                                <CommandInput placeholder="Busca doctores..." className="h-9" />
+                                <CommandList>
+                                  <CommandEmpty>Doctor no encontrado</CommandEmpty>
+                                  <CommandGroup>
+                                    {doctors.map((d) => (
+                                      <CommandItem
+                                        key={d.id}
+                                        value={d.id}
+                                        onSelect={(currentValue) => {
+                                          field.onChange(currentValue)
+                                          setOpenDoctors(false)
+                                        }}
+                                      >
+                                        {d.name}
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
+                  />
+
+                  
+                  <DialogFooter>
+                    <Button type="submit" className="w-full" disabled={submitting}>
+                      {submitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Guardando...
+                        </>
+                      ) : (
+                        "Crear Cita"
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            )}
           </DialogContent>
         </Dialog>
       </div>
 
       {/* Doctor List */}
-      {doctors.length === 0 ? (
-        <p>No se encontraron doctores.</p>
+      {appointments.length === 0 ? (
+        <p>No se encontraron citas.</p>
       ) : (
         <ul className="space-y-2">
-          {doctors.map((doc) => (
-            <Item variant="outline" key={doc.id}>
+          {appointments.map((apt) => (
+            <Item variant="outline" key={apt.doctorId + "#" + apt.scheduledOn}>
               <ItemContent>
                 <ItemTitle className="line-clamp-1">
-                  {doc.name} -{" "}
-                  <span className="text-muted-foreground">{doc.specialty ?? "Medicina General"}</span>
+                  Cita con {doctors.find(d => d.id === apt.doctorId)?.name}{" "}
+                  <span className="text-muted-foreground">especialista en {doctors.find(d => d.id === apt.doctorId)?.specialty ?? "Medicina General"}</span>
                 </ItemTitle>
                 <ItemDescription>
-                  {doc.email}
+                  Agendada para {apt.scheduledOn}
                 </ItemDescription>
               </ItemContent>
-              <ItemActions>
-                <Button variant="secondary" size="sm">
-                  Editar
-                </Button>
-              </ItemActions>
             </Item>
           ))}
         </ul>
