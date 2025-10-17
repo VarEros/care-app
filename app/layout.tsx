@@ -18,9 +18,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Authenticator>
+        {/* <Authenticator>
           {({ signOut, user }) => (
-            <>
+            <> */}
             <Toaster />
             <div className="flex">
               {/* Left side menu filtered by Cognito groups */}
@@ -29,9 +29,9 @@ export default function RootLayout({
               {/* Main content */}
               <div className="flex-1 min-h-screen bg-gray-50">
                 <header className="flex justify-between p-4 bg-white border-b">
-                  <span>Bienvenido {user?.signInDetails?.loginId}</span>
+                  <span>Bienvenido Juan Perez</span>
                   <button
-                    onClick={signOut}
+                    onClick={undefined}
                     className="px-3 py-1 rounded bg-gray-900 text-white"
                   >
                     Cerrar sesión
@@ -40,9 +40,9 @@ export default function RootLayout({
                 <main className="p-6">{children}</main>
               </div>
             </div>
-            </>
+            {/* </>
           )}
-        </Authenticator>
+        </Authenticator> */}
       </body>
     </html>
   );

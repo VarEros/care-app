@@ -3,8 +3,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useAuthenticator } from "@aws-amplify/ui-react";
-import { fetchAuthSession } from "aws-amplify/auth";
+// import { useAuthenticator } from "@aws-amplify/ui-react";
+// import { fetchAuthSession } from "aws-amplify/auth";
 
 export default function Sidebar() {
 
@@ -17,15 +17,15 @@ export default function Sidebar() {
     (async () => {
       try {
         // 🔑 Auth v6: use fetchAuthSession to access JWT tokens
-        const { tokens } = await fetchAuthSession();   
-        console.log(tokens?.idToken?.payload["cognito:groups"]);
+        // const { tokens } = await fetchAuthSession();   
+        // console.log(tokens?.idToken?.payload["cognito:groups"]);
 
-        // Read groups from the access token payload; might be undefined
-        const gs =
-          (tokens?.accessToken?.payload["cognito:groups"] as string[] | undefined) ??
-          [];
+        // // Read groups from the access token payload; might be undefined
+        // const gs =
+        //   (tokens?.accessToken?.payload["cognito:groups"] as string[] | undefined) ??
+        //   [];
 
-        if (alive) setGroups(gs);
+        if (alive) setGroups(["Admins"]);
       } catch (err) {
         console.error("Failed to fetch auth session:", err);
         if (alive) setGroups([]);
@@ -64,6 +64,7 @@ export default function Sidebar() {
     if (groups.includes("Admins")) {
       base.push(
         { label: "Administración", href: "/admin" },
+        { label: "Citas", href: "/appointments" },
         { label: "Doctores", href: "/doctors" },
       );
     }

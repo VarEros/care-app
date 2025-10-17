@@ -6,7 +6,9 @@ import type { Schema } from "@/amplify/data/resource"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { ChevronsUpDown, Loader2 } from "lucide-react"
+import { Check, ChevronsUpDown, Loader2 } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Nullable } from "@aws-amplify/data-schema"
 
 // shadcn/ui components
 import {
@@ -19,14 +21,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select"
 import {
   Form,
   FormControl,
@@ -37,10 +31,8 @@ import {
 } from "@/components/ui/form"
 import {
   Item,
-  ItemActions,
   ItemContent,
   ItemDescription,
-  ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
 import { toast } from "sonner"
@@ -57,6 +49,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
 
 const appointmentSchema = z.object({
   doctorId: z.string(),
@@ -71,18 +64,29 @@ const appointmentSchema = z.object({
 })
 
 type AppointmentFormValues = z.infer<typeof appointmentSchema>
+type Appointment = {
+    readonly scheduledOn: string;
+    readonly doctor: {
+        readonly name: string;
+        readonly specialty: Nullable<string>;
+    };
+}
 
 export default function AppointmentsPage() {
-  const [appointments, setAppointments] = useState<Array<Schema["Appointment"]["updateType"]>>([])
+  const [appointments, setAppointments] = useState<Array<Appointment>>([])
   const [doctors, setDoctors] = useState<Array<Schema["Doctor"]["updateType"]>>([])
   const [specialties, setSpecialties] = useState<string[]>([])
-  const [specialty, setSpecialty] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [specialty, setSpecialty] = useState<string>("")
+  const [date, setDate] = useState<Date | undefined>(new Date())
+
   const [openDialog, setOpenDialog] = useState(false)
   const [openSpecialties, setOpenSpecialties] = useState(false)
   const [openDoctors, setOpenDoctors] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
   
+  const [loading, setLoading] = useState(true)
+  const [loadingDoctors, setLoadingDoctors] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+
   // Setup form
   const form = useForm<AppointmentFormValues>({
     resolver: zodResolver(appointmentSchema),
@@ -98,7 +102,7 @@ export default function AppointmentsPage() {
   useEffect(() => {
     const loadAppointments = async () => {
       try {
-        // const { data, errors } = await client.models.Appointment.list()
+        // const { data, errors } = await client.models.Appointment.list({filter: {patientId: {eq: "1"}}, selectionSet: ["scheduledOn", "doctor.name", "doctor.specialty"]})
         setTimeout(() => {
           const specialties = [
             "Cardiologia",
@@ -107,12 +111,18 @@ export default function AppointmentsPage() {
           setSpecialties(specialties)
           const appointments = [
             {
-              doctorId: "1",
-              scheduledOn: "20 de Octubre, 2025 - 8:30PM"
+              scheduledOn: "20 de Octubre, 2025 - 8:30PM",
+              doctor: {
+                name: "Mario Lopez",
+                specialty: "Neurocirugia"
+              }
             },
             {
-              doctorId: "1",
-              scheduledOn: "25 de Octubre, 2025 - 2:30PM"
+              scheduledOn: "25 de Octubre, 2025 - 2:30PM",
+              doctor: {
+                name: "Maria Gutierrez",
+                specialty: "Cardiologia"
+              }
             }
           ]
           setAppointments(appointments)
@@ -133,9 +143,10 @@ export default function AppointmentsPage() {
   // Load doctors on mount
   useEffect(() => {
     if (!specialty) return
+    setLoadingDoctors(true)
     const loadDoctors = async () => {
       try {
-        // const { data, errors } = await client.models.Doctor.list({filter: {status: {eq: "Activo"}, specialty: {eq: specialty ?? undefined}}, selectionSet: ["id", "name", "email"]})
+        // const { data, errors } = await client.models.Doctor.list({filter: {status: {eq: "Activo"}, specialty: {eq: specialty ?? undefined}}, selectionSet: ["id", "name"]})
         setTimeout(() => {
           const doctors = [
             {
@@ -150,14 +161,15 @@ export default function AppointmentsPage() {
               email: "juanbolivar@gmail.com"
             }
           ];
-          setDoctors(doctors);
-        }, 2000)
+          setDoctors(doctors)
+          setLoadingDoctors(false)
+        }, 1000)
         // if (errors) console.error(errors)
         // else setDoctors(data)
       } catch (err) {
         console.error("Failed to load appointments:", err)
       } finally {
-        // setLoading(false)
+        // setLoadingDoctors(false)
       }
     }
 
@@ -234,16 +246,22 @@ export default function AppointmentsPage() {
                   <CommandList>
                     <CommandEmpty>Especialidad no encontrada</CommandEmpty>
                     <CommandGroup>
-                      {specialties.map((d, index) => (
+                      {specialties.map((s, index) => (
                         <CommandItem
                           key={index}
-                          value={d}
+                          value={s}
                           onSelect={(currentValue) => {
                             setSpecialty(currentValue)
                             setOpenSpecialties(false)
                           }}
                         >
-                          {d}
+                          {s}
+                          <Check
+                            className={cn(
+                              "ml-auto",
+                              specialty === s ? "opacity-100" : "opacity-0"
+                            )}
+                          />
                         </CommandItem>
                       ))}
                     </CommandGroup>
@@ -264,17 +282,23 @@ export default function AppointmentsPage() {
                         <FormControl>
                           <Popover open={openDoctors} onOpenChange={setOpenDoctors}>
                             <PopoverTrigger asChild>
-                              <Button
-                                variant="outline"
-                                role="combobox"
-                                aria-expanded={openDoctors}
-                                className="justify-between"
-                              >
-                                {field.value
-                                  ? doctors.find((d) => d.id === field.value)?.name
-                                  : "Selecciona un doctor..."}
-                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                              </Button>
+                              {loadingDoctors ? (
+                                <Button variant="outline" disabled className="justify-between">
+                                  Cargando Doctores...
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  aria-expanded={openDoctors}
+                                  className="justify-between"
+                                >
+                                  {field.value
+                                    ? doctors.find((d) => d.id === field.value)?.name
+                                    : "Selecciona un doctor..."}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              )}
                             </PopoverTrigger>
                             <PopoverContent className="p-0">
                               <Command>
@@ -292,6 +316,12 @@ export default function AppointmentsPage() {
                                         }}
                                       >
                                         {d.name}
+                                        <Check
+                                          className={cn(
+                                            "ml-auto",
+                                            field.value === d.id ? "opacity-100" : "opacity-0"
+                                          )}
+                                        />
                                       </CommandItem>
                                     ))}
                                   </CommandGroup>
@@ -304,8 +334,15 @@ export default function AppointmentsPage() {
                       </FormItem>
                     )}
                   />
+                  <Calendar
+                    mode="single"    
+                    defaultMonth={date}      
+                    numberOfMonths={2}
+                    selected={date}
+                    onSelect={setDate}
+                    className="rounded-lg border"
+                  />
 
-                  
                   <DialogFooter>
                     <Button type="submit" className="w-full" disabled={submitting}>
                       {submitting ? (
@@ -331,11 +368,11 @@ export default function AppointmentsPage() {
       ) : (
         <ul className="space-y-2">
           {appointments.map((apt) => (
-            <Item variant="outline" key={apt.doctorId + "#" + apt.scheduledOn}>
+            <Item variant="outline" key={apt.scheduledOn}>
               <ItemContent>
                 <ItemTitle className="line-clamp-1">
-                  Cita con {doctors.find(d => d.id === apt.doctorId)?.name}{" "}
-                  <span className="text-muted-foreground">especialista en {doctors.find(d => d.id === apt.doctorId)?.specialty ?? "Medicina General"}</span>
+                  Cita con {apt.doctor.name}{" "}
+                  <span className="text-muted-foreground">especialista en {apt.doctor.specialty ?? "Medicina General"}</span>
                 </ItemTitle>
                 <ItemDescription>
                   Agendada para {apt.scheduledOn}
