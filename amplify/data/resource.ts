@@ -46,7 +46,7 @@ export const schema = a.schema({
       patientId: a.id().required(), // FK → Patient
       scheduledOn: a.datetime().required(),
       type: a.enum(["Primaria", "Seguimiento", "Preventiva"]),
-      status: a.enum(["Programada", "Completada", "Cancelada"]),
+      status: a.enum(["Registrada", "Aprobada", "Completada", "Cancelada"]),
       doctor: a.belongsTo("Doctor", "doctorId"),
       patient: a.belongsTo("Patient", "patientId"),
       consultation: a.hasOne("Consultation", ["doctorId", "appointmentScheduledOn"]),
@@ -70,6 +70,7 @@ export const schema = a.schema({
       observations: a.string(),
       startedAt: a.datetime().required(),
       endedAt: a.datetime(),
+      record: a.json(),
       appointment: a.belongsTo("Appointment", ["doctorId", "appointmentScheduledOn"]),
       recipes: a.hasMany("Recipe", "consultationId"), // relación con Recipe
     })
@@ -83,9 +84,10 @@ export const schema = a.schema({
       consultationId: a.id().required(), // FK → Consultation
       patientId: a.id().required(), // FK → Patient
       medication: a.string().required(),
-      dosage: a.string().required(),
+      dosage: a.integer().required(),
       frequency: a.string().required(),
-      duration: a.string().required(),
+      frequencyType: a.enum(["Hora", "Dia", "Semana"]),
+      until: a.datetime().required(),
       notes: a.string(),
       consultation: a.belongsTo("Consultation", "consultationId"),
       patient: a.belongsTo("Patient", "patientId"),

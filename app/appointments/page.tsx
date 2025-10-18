@@ -225,7 +225,7 @@ export default function AppointmentsPage() {
             <DialogHeader>
               <DialogTitle>Creacion de Nueva Cita</DialogTitle>
               <DialogDescription>
-                Llena el formulario para crear un doctor junto a su perfil de usuario, el nuevo doctor podra entrar al sistema sin necesidad de introduccir contraseña.
+                Llena el formulario para registrar su cita, espere hasta que el doctor revise y valide su cita para considerarla agendada.
               </DialogDescription>
             </DialogHeader>
             <Popover open={openSpecialties} onOpenChange={setOpenSpecialties}>
@@ -335,9 +335,7 @@ export default function AppointmentsPage() {
                     )}
                   />
                   <Calendar
-                    mode="single"    
-                    defaultMonth={date}      
-                    numberOfMonths={2}
+                    mode="single"
                     selected={date}
                     onSelect={setDate}
                     disabled={(day) => day < new Date(new Date().setHours(0, 0, 0, 0))}
