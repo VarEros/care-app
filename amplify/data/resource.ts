@@ -46,6 +46,7 @@ export const schema = a.schema({
       patientId: a.id().required(), // FK → Patient
       scheduledOn: a.datetime().required(),
       type: a.enum(["Primaria", "Seguimiento", "Preventiva"]),
+      reason: a.string().required().authorization((allow) => allow.group("Patients").to(["read"])),
       status: a.enum(["Registrada", "Aprobada", "Completada", "Cancelada"]),
       doctor: a.belongsTo("Doctor", "doctorId"),
       patient: a.belongsTo("Patient", "patientId"),
@@ -64,11 +65,10 @@ export const schema = a.schema({
     .model({
       doctorId: a.id().required(), // FK → Appointment
       appointmentScheduledOn: a.datetime().required(),
-      reason: a.string(),
-      diagnosis: a.string(),
+      diagnosis: a.string().required(),
       treatment: a.string(),
       observations: a.string(),
-      startedAt: a.datetime().required(),
+      startedAt: a.datetime(),
       endedAt: a.datetime(),
       record: a.json(),
       appointment: a.belongsTo("Appointment", ["doctorId", "appointmentScheduledOn"]),

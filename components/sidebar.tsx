@@ -7,7 +7,6 @@ import { useEffect, useMemo, useState } from "react";
 // import { fetchAuthSession } from "aws-amplify/auth";
 
 export default function Sidebar() {
-
   // Local state to hold Cognito groups from the access token payload
   const [groups, setGroups] = useState<string[]>([]);
 
@@ -17,7 +16,7 @@ export default function Sidebar() {
     (async () => {
       try {
         // 🔑 Auth v6: use fetchAuthSession to access JWT tokens
-        // const { tokens } = await fetchAuthSession();   
+        // const { tokens } = await fetchAuthSession();
         // console.log(tokens?.idToken?.payload["cognito:groups"]);
 
         // // Read groups from the access token payload; might be undefined
@@ -47,7 +46,7 @@ export default function Sidebar() {
     if (groups.includes("Patients")) {
       base.push(
         { label: "Mis Citas", href: "/my-appointments" },
-        { label: "Mis Recetas", href: "/my-recipes" },
+        { label: "Mis Recetas", href: "/my-recipes" }
       );
     }
 
@@ -56,7 +55,7 @@ export default function Sidebar() {
       base.push(
         { label: "Pacientes", href: "/patients" },
         { label: "Citas", href: "/appointments" },
-        { label: "Recetas", href: "/recipes" },
+        { label: "Recetas", href: "/recipes" }
       );
     }
 
@@ -66,6 +65,7 @@ export default function Sidebar() {
         { label: "Administración", href: "/admin" },
         { label: "Citas", href: "/appointments" },
         { label: "Doctores", href: "/doctors" },
+        { label: "Consultas", href: "/consultations" }
       );
     }
 
@@ -78,7 +78,10 @@ export default function Sidebar() {
       <ul className="space-y-2">
         {items.map((item) => (
           <li key={item.href}>
-            <Link className="block hover:bg-gray-700 p-2 rounded" href={item.href}>
+            <Link
+              className="block hover:bg-gray-700 p-2 rounded"
+              href={item.href}
+            >
               {item.label}
             </Link>
           </li>
