@@ -85,8 +85,9 @@ export const schema = a.schema({
       patientId: a.id().required(), // FK → Patient
       medication: a.string().required(),
       dosage: a.integer().required(),
+      dosageFormat: a.enum(["mg", "ml", "pastilla", "gota", "tableta", "cápsula"]),
       frequency: a.string().required(),
-      frequencyType: a.enum(["Hora", "Dia", "Semana"]),
+      frequencyType: a.enum(["Horas", "Dias", "Semanas"]),
       until: a.datetime().required(),
       notes: a.string(),
       consultation: a.belongsTo("Consultation", "consultationId"),
