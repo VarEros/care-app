@@ -161,7 +161,7 @@ export default function DoctorsPage() {
     )
 
   return (
-    <div className="p-6">
+    <div className="sm:p-6">
       <DoctorScheduleSheet openSheet={openSheet} setOpenSheet={setOpenSheet}/>
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-bold">Doctores</h1>
