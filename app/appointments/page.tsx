@@ -227,13 +227,13 @@ export default function AppointmentsPage() {
   if (loading)
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <span className="ml-2 text-blue-600">Cargando citas...</span>
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Cargando citas...</span>
       </div>
     )
 
   return (
-    <div className="p-6">
+    <div className="sm:p-6">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-bold">Citas</h1>
 
@@ -434,7 +434,7 @@ export default function AppointmentsPage() {
               <ItemContent>
                 <ItemTitle className="line-clamp-1">
                   Cita con {apt.doctor.name}{" "}
-                  <span className="text-muted-foreground">especialista en {apt.doctor.specialty ?? "Medicina General"}</span>
+                  <span className="text-muted-foreground hidden sm:block">especialista en {apt.doctor.specialty ?? "Medicina General"}</span>
                 </ItemTitle>
                 <ItemDescription>
                   Agendada para {apt.scheduledOn}

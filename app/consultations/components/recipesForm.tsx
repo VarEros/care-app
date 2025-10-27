@@ -84,7 +84,7 @@ export function RecipesForm({ recipes, setRecipes }: RecipesFormProps) {
   }
 
   return (
-    <div className="w-1/3 flex flex-col overflow-auto space-y-4">
+    <div className="md:w-1/3 flex flex-col overflow-auto space-y-4">
         <Label className="text-base font-semibold">Recetas</Label>
         <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
@@ -93,7 +93,7 @@ export function RecipesForm({ recipes, setRecipes }: RecipesFormProps) {
             </Button>
         </PopoverTrigger>
 
-        <PopoverContent className="w-[25vw] p-4">
+        <PopoverContent className="w-full p-4">
             <Form {...form}>
             <form
                 onSubmit={form.handleSubmit(onSubmit)}

@@ -252,7 +252,7 @@ export default function AppointmentsPage() {
           <DialogTrigger asChild>
             <Button className="w-[200px]">Realizar Consulta</Button>
           </DialogTrigger>
-          <DialogContent className={openForm ? "sm:max-w-none sm:w-[80%]" : "sm:max-w-[425px]"}>
+          <DialogContent className={openForm ? "max-h-screen overflow-auto sm:max-w-none sm:w-[80%]" : "sm:max-w-[425px]"}>
             <DialogHeader>
               <DialogTitle>Registrar Consulta</DialogTitle>
               <DialogDescription>
@@ -320,109 +320,113 @@ export default function AppointmentsPage() {
               </>
             )}
             {openForm && (
-              <div className="flex flex-row gap-6">
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 w-2/3 h-fit">
-                    {/* Reason */}
-                    <FormField
-                      control={form.control}
-                      name="reason"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Motivo</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Ej: Dolor de cabeza" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Diagnosis */}
-                    <FormField
-                      control={form.control}
-                      name="diagnosis"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Diagnóstico</FormLabel>
-                          <FormControl>
-                            <Textarea placeholder="Ej: Migraña" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Treatment */}
-                    <FormField
-                      control={form.control}
-                      name="treatment"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Tratamiento</FormLabel>
-                          <FormControl>
-                            <Textarea placeholder="Ej: Analgésicos y descanso" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Observations */}
-                    <FormField
-                      control={form.control}
-                      name="observations"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Observaciones</FormLabel>
-                          <FormControl>
-                            <Textarea placeholder="Notas adicionales..." {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Start and End Time */}
-                    <div className="grid grid-cols-2 gap-4">
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 h-fit">
+                  <div className="flex flex-col md:flex-row gap-6">
+                    <div className="md:w-2/3">
+                      {/* Reason */}
                       <FormField
                         control={form.control}
-                        name="startedAt"
+                        name="reason"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Inicio</FormLabel>
+                            <FormLabel>Motivo</FormLabel>
                             <FormControl>
-                              <Input type="datetime-local" {...field} />
+                              <Input placeholder="Ej: Dolor de cabeza" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
+
+                      {/* Diagnosis */}
                       <FormField
                         control={form.control}
-                        name="endedAt"
+                        name="diagnosis"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Fin</FormLabel>
+                            <FormLabel>Diagnóstico</FormLabel>
                             <FormControl>
-                              <Input type="datetime-local" {...field} />
+                              <Textarea placeholder="Ej: Migraña" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
+
+                      {/* Treatment */}
+                      <FormField
+                        control={form.control}
+                        name="treatment"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Tratamiento</FormLabel>
+                            <FormControl>
+                              <Textarea placeholder="Ej: Analgésicos y descanso" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* Observations */}
+                      <FormField
+                        control={form.control}
+                        name="observations"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Observaciones</FormLabel>
+                            <FormControl>
+                              <Textarea placeholder="Notas adicionales..." {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* Start and End Time */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="startedAt"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Inicio</FormLabel>
+                              <FormControl>
+                                <Input type="datetime-local" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="endedAt"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Fin</FormLabel>
+                              <FormControl>
+                                <Input type="datetime-local" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     </div>
+                    <RecipesForm recipes={recipes} setRecipes={setRecipes} />
+                  </div>
 
                     <DialogFooter>
                       <Button
                         variant="secondary"
-                        className="w-full"
+                        className="mt-4 sm:mt-0"
                         disabled={submitting}
                         onClick={() => setOpenForm(false)}
                       >
                         Volver
                       </Button>
-                      <Button type="submit" className="w-full" disabled={submitting}>
+                      <Button type="submit" disabled={submitting}>
                         {submitting ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -433,10 +437,8 @@ export default function AppointmentsPage() {
                         )}
                       </Button>
                     </DialogFooter>
-                  </form>
-                </Form>
-                <RecipesForm recipes={recipes} setRecipes={setRecipes} />
-              </div>
+                </form>
+              </Form>
             )}
           </DialogContent>
         </Dialog>
