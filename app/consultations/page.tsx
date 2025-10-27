@@ -237,8 +237,8 @@ export default function AppointmentsPage() {
   if (loading)
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <span className="ml-2 text-blue-600">Cargando consultas...</span>
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Cargando consultas...</span>
       </div>
     )
 
@@ -451,19 +451,19 @@ export default function AppointmentsPage() {
                 <Item key={apt.scheduledOn} variant="outline">
                 <ItemContent>
                     <ItemTitle>
-                    <span className="text-muted-foreground">
+                    <span className="text-muted-foreground hidden md:block">
                         {"Consulta con"}
                     </span>
                     {apt.patient.name} / {apt.patient.cedula}
-                    <span className="text-muted-foreground">
+                    <span className="text-muted-foreground hidden xs:block">
                         {apt.reason}
                     </span>
                     </ItemTitle>
                     <ItemDescription>
-                    Realizada el {apt.scheduledOn}
+                      Realizada el {apt.scheduledOn}
                     </ItemDescription>
                 </ItemContent>
-                <ItemActions>
+                <ItemActions className="hidden sm:block">
                     <Button variant="outline" size="sm">
                     Ver Detalles
                     </Button>

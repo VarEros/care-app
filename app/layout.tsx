@@ -12,7 +12,6 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { Menu, Moon, Sun } from "lucide-react"
 import { ThemeProvider } from "@/components/theme-provider"
-import { useTheme } from "next-themes"
 
 Amplify.configure(outputs)
 
@@ -21,8 +20,6 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-
-  const { setTheme } = useTheme()
   
   return (
     <html lang="en" suppressHydrationWarning>
@@ -59,7 +56,7 @@ export default function RootLayout({
                 </Sheet>
 
                 {/* Main content area */}
-                <div className="flex-1 min-h-screen">
+                <div className="flex-1 overflow-auto h-screen">
                   <header className="flex items-center justify-between p-4 border-b">
                     <div className="flex items-center gap-3">
                       {/* Mobile: show menu button to open sidebar */}

@@ -121,7 +121,7 @@ export default function Sidebar() {
         </Circle>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold truncate">Dr. Juan Pérez</p>
-          <p className="text-xs text-muted truncate">Cardiología</p>
+          <p className="text-xs text-muted-foreground truncate">Cardiología</p>
         </div>
       </div>
 
@@ -140,21 +140,21 @@ export default function Sidebar() {
                 className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                   isActive
-                    ? "bg-blue-50 text-blue-700 font-medium"
-                    : "text-gray-700 dark:text-gray-500 hover:bg-gray-100"
+                    ? "bg-secondary text-primary font-medium"
+                    : "text-secondary-foreground hover:bg-primary-foreground"
                 )}
               >
                 <span
                   className={cn(
                     "flex-none",
-                    isActive ? "text-blue-600" : "text-muted-foreground"
+                    isActive ? "text-primary" : "text-muted-foreground"
                   )}
                 >
                   {item.icon}
                 </span>
                 <span className="text-sm truncate">{item.label}</span>
                 {item.badge != null && (
-                  <span className="ml-auto text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                  <span className="ml-auto text-xs bg-blue-100 text-primary px-2 py-0.5 rounded-full">
                     {String(item.badge)}
                   </span>
                 )}
@@ -168,7 +168,7 @@ export default function Sidebar() {
         <div className="space-y-1">
           <Link
             href="/settings"
-            className="flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 dark:text-gray-500 hover:bg-gray-100"
+            className="flex items-center gap-3 px-3 py-2 rounded-md text-muted-foreground hover:bg-primary-foreground"
           >
             <Settings className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm">Ajustes</span>
@@ -176,7 +176,7 @@ export default function Sidebar() {
 
           <Link
             href="/help"
-            className="flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 dark:text-gray-500 hover:bg-gray-100"
+            className="flex items-center gap-3 px-3 py-2 rounded-md text-muted-foreground hover:bg-primary-foreground"
           >
             <FileText className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm">Ayuda</span>

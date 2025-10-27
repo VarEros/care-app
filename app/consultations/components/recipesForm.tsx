@@ -84,12 +84,12 @@ export function RecipesForm({ recipes, setRecipes }: RecipesFormProps) {
   }
 
   return (
-    <div className="w-1/3 overflow-auto space-y-4">
+    <div className="w-1/3 flex flex-col overflow-auto space-y-4">
         <Label className="text-base font-semibold">Recetas</Label>
         <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
             <Button variant="outline">
-            <Plus className="mr-2 h-4 w-4" /> Agregar Receta
+                <Plus className="mr-2 h-4 w-4" /> Nueva Receta
             </Button>
         </PopoverTrigger>
 
@@ -194,7 +194,7 @@ export function RecipesForm({ recipes, setRecipes }: RecipesFormProps) {
                 control={form.control}
                 name="until"
                 render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="col-span-2">
                         <FormLabel>Consumir hasta</FormLabel>
                         <FormControl>
                             <Input type="date" {...field} />
@@ -223,7 +223,7 @@ export function RecipesForm({ recipes, setRecipes }: RecipesFormProps) {
                 />
 
                 <Button type="submit" className="col-span-2 w-full">
-                Guardar Receta
+                Agregar Receta
                 </Button>
             </form>
             </Form>
