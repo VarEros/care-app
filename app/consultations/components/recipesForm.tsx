@@ -38,13 +38,15 @@ import { useState } from "react"
 // 🧾 Zod Schema
 export const recipeSchema = z.object({
   consultationId: z.string().optional(),
-  patientId: z.string().optional(),
   medication: z.string().min(1, "El medicamento es requerido"),
   dosage: z.coerce.number().min(1, "La dosis es requerida"),
   dosageFormat: z.enum(["mg", "ml", "pastilla", "gota", "tableta", "cápsula"]),
   frequency: z.string().min(1, "La frecuencia es requerida"),
   frequencyType: z.enum(["Horas", "Dias", "Semanas"]),
-  until: z.date({ required_error: "La fecha límite es requerida" }),
+  until: z    
+    .string()
+    .nonempty("La fecha de culminación requerida")
+    .refine((val) => !isNaN(Date.parse(val)), "La fecha es invalida"),
   notes: z.string().optional(),
 })
 
@@ -192,35 +194,12 @@ export function RecipesForm({ recipes, setRecipes }: RecipesFormProps) {
                 control={form.control}
                 name="until"
                 render={({ field }) => (
-                    <FormItem className="col-span-2">
-                    <FormLabel>Hasta</FormLabel>
-                    <Popover>
-                        <PopoverTrigger asChild>
+                    <FormItem>
+                        <FormLabel>Consumir hasta</FormLabel>
                         <FormControl>
-                            <Button
-                            variant="outline"
-                            className="w-full justify-start text-left font-normal"
-                            >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value
-                                ? format(field.value, "PPP")
-                                : "Seleccionar fecha"}
-                            </Button>
+                            <Input type="date" {...field} />
                         </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                        <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(day) =>
-                            day < new Date(new Date().setHours(0, 0, 0, 0))
-                            }
-                            initialFocus
-                        />
-                        </PopoverContent>
-                    </Popover>
-                    <FormMessage />
+                        <FormMessage />
                     </FormItem>
                 )}
                 />
