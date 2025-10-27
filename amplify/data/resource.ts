@@ -6,14 +6,47 @@ export const createDoctorWithUserHandler = defineFunction({
   entry: './createDoctorWithUser/handler.ts',
 })
 
+export const createConsultationWithRecipesHandler = defineFunction({
+  name: "create-consultation-with-recipes",
+  entry: "./createConsultationWithRecipes/handler.ts", 
+});
+
+const dosageFormats = a.enum(["mg", "ml", "pastilla", "gota", "tableta", "cápsula"])
+const frequencyTypes = a.enum(["Horas", "Dias", "Semanas"])
+const genders =  a.enum(["Masculino", "Femenino", "Otro"])
+
+const baseDoctor = {
+  name: a.string().required(),
+  email: a.email().required(),
+  birthdate: a.date().required(),
+  gender: genders,
+  specialty: a.string()
+}
+
+const baseRecipe = {
+  medication: a.string().required(),
+  dosage: a.integer().required(),
+  dosageFormat: dosageFormats,
+  frequency: a.string().required(),
+  frequencyType: frequencyTypes,
+  until: a.datetime().required(),
+  notes: a.string(),
+}
+
+const baseConsultation = {
+  doctorId: a.id().required(), // FK → Appointment
+  appointmentScheduledOn: a.datetime().required(),
+  diagnosis: a.string().required(),
+  treatment: a.string(),
+  observations: a.string(),
+  startedAt: a.datetime(),
+  endedAt: a.datetime()
+}
+
 export const schema = a.schema({
   Doctor: a
     .model({
-      name: a.string().required(),
-      email: a.email().required(),
-      birthdate: a.date().required(),
-      gender: a.enum(["Masculino", "Femenino", "Otro"]),
-      specialty: a.string(),
+      ...baseDoctor,
       businessHours: a.json(),
       status: a.enum(["Activo", "Inactivo"]),
       appointments: a.hasMany("Appointment", "doctorId"), // relación con Appointment
@@ -30,7 +63,8 @@ export const schema = a.schema({
       email: a.email(),
       name: a.string().required(),
       birthdate: a.date().required(),
-      gender: a.enum(["Masculino", "Femenino", "Otro"]),
+      gender: genders,
+      exames: a.string(),
       appointments: a.hasMany("Appointment", "patientId"), // relación con Appointment
       recipes: a.hasMany("Recipe", "patientId"), // relación con Recipe
     })
@@ -63,33 +97,21 @@ export const schema = a.schema({
 
   Consultation: a
     .model({
-      doctorId: a.id().required(), // FK → Appointment
-      appointmentScheduledOn: a.datetime().required(),
-      diagnosis: a.string().required(),
-      treatment: a.string(),
-      observations: a.string(),
-      startedAt: a.datetime(),
-      endedAt: a.datetime(),
+      ...baseConsultation,
       record: a.json(),
       appointment: a.belongsTo("Appointment", ["doctorId", "appointmentScheduledOn"]),
       recipes: a.hasMany("Recipe", "consultationId"), // relación con Recipe
     })
     .authorization((allow) => [
       allow.group("Patients").to(["read"]),
-      allow.ownerDefinedIn("doctorId").to(["read", "create", "update"]) // doctor
+      allow.ownerDefinedIn("doctorId").to(["read", "create"]) // doctor
     ]),
 
     Recipe: a
     .model({
       consultationId: a.id().required(), // FK → Consultation
       patientId: a.id().required(), // FK → Patient
-      medication: a.string().required(),
-      dosage: a.integer().required(),
-      dosageFormat: a.enum(["mg", "ml", "pastilla", "gota", "tableta", "cápsula"]),
-      frequency: a.string().required(),
-      frequencyType: a.enum(["Horas", "Dias", "Semanas"]),
-      until: a.datetime().required(),
-      notes: a.string(),
+      ...baseRecipe,
       consultation: a.belongsTo("Consultation", "consultationId"),
       patient: a.belongsTo("Patient", "patientId"),
       createdAt: a.datetime().required()
@@ -97,21 +119,31 @@ export const schema = a.schema({
     .identifier(["patientId", "createdAt"])
     .authorization((allow) => [
       allow.ownerDefinedIn("patientId").to(["read"]), // doctor
-      allow.group("Doctors").to(["read", "create", "update"]),
+      allow.group("Doctors").to(["read", "create"]),
     ]),
+
 
     createDoctorWithUser: a
       .mutation()
-      .arguments({
-        name: a.string().required(),
-        email: a.string().required(),
-        birthdate: a.date().required(),
-        gender: a.string().required(),
-        specialty: a.string(),
-      })
+      .arguments(baseDoctor)
       .returns(a.ref("Doctor"))
       .authorization((allow) => [allow.groups(["Admins"])])
       .handler(a.handler.function(createDoctorWithUserHandler)), // only admins create doctors 
+
+    BaseRecipe: a.customType(baseRecipe),
+    BaseConsultation: a.customType(baseConsultation),
+    
+    createConsultationWithRecipes: a
+      .mutation()
+      .arguments({
+        consultation: a.ref("BaseConsultation").required(),
+        recipes: a.ref("BaseRecipe").array().required(),
+      })
+      .returns(a.ref("Appointment")) // return the created consultation
+      .authorization((allow) => [
+        allow.group("Doctors"),
+      ])
+      .handler(a.handler.function(createConsultationWithRecipesHandler)),
 })
 .authorization((allow) => [allow.resource(postConfirmation),
   allow.resource(createDoctorWithUserHandler)]);

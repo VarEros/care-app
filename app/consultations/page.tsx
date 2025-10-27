@@ -52,7 +52,8 @@ import {
 } from "@/components/ui/popover"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
-import { RecipesForm } from "./components/recipesForm"
+import { RecipeFormValues, RecipesForm } from "./components/recipesForm"
+import { fetchAuthSession } from "aws-amplify/auth"
 
 const consultationSchema = z.object({
   reason: z.string().nonempty("La razon de la cita es requerida"),
@@ -87,7 +88,7 @@ export default function AppointmentsPage() {
   const [completedAppointments, setCompletedAppointments] = useState<Array<CompletedAppointment>>([])
   const [approvedAppointments, setApprovedAppointments] = useState<Array<ApprovedAppointment>>([])
   const [appointment, setAppointment] = useState<ApprovedAppointment | null>(null)
-  const [recipes, setRecipes] = useState<any[]>([])
+  const [recipes, setRecipes] = useState<RecipeFormValues[]>([])
 
   const [openDialog, setOpenDialog] = useState(false)
   const [openForm, setOpenForm] = useState(false)
@@ -96,7 +97,7 @@ export default function AppointmentsPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
-  let doctorId;
+  let doctorId: string;
 
   // Setup form
   const form = useForm<ConsultationFormValues>({
@@ -115,9 +116,9 @@ export default function AppointmentsPage() {
   useEffect(() => {
     const loadAppointments = async () => {
       try {
-        // const { tokens } = await fetchAuthSession();
-        // const sub = tokens?.idToken?.payload["sub"] as string;
-        // doctorId = sub;
+        const { tokens }= await fetchAuthSession();
+        const sub = tokens?.idToken?.payload["sub"] as string;
+        doctorId = sub; 
 
         // if (!sub) {
         //   setLoading(false);
@@ -183,22 +184,6 @@ export default function AppointmentsPage() {
             }
           },
           {
-            patientId: "3",
-            scheduledOn: "26 de Octubre, 2025 - 2:30PM",
-            patient: {
-              name: "Maria Gutierrez",
-              cedula: "001-240504-1023S"
-            }
-          },
-          {
-            patientId: "4",
-            scheduledOn: "27 de Octubre, 2025 - 2:30PM",
-            patient: {
-              name: "Maria Gutierrez",
-              cedula: "001-240504-1023S"
-            }
-          },
-          {
             patientId: "5",
             scheduledOn: "28 de Octubre, 2025 - 2:30PM",
             patient: {
@@ -217,20 +202,30 @@ export default function AppointmentsPage() {
   const onSubmit = async (values: ConsultationFormValues) => {
     setSubmitting(true)
     try {
-      // const { data, errors } = await client.models.Appointment.create(values)
-      // if (errors) {
-      //   console.error("Error creating appointment:", errors)
-      //   toast.error("Error al crear al appointment", {
-      //     description: errors[0]["message"]
-      //   })
-      // } else if (data) {
-      //   setAppointments((prev) => [...prev, data])
-      //   setOpenDialog(false)
-      //   toast.success("Cita creada con exito", {
-      //     description: values.patientId + " ya puede ingresar al sistema."
-      //   })
-      //   form.reset()
-      // }
+      const payload = {
+        ...values,
+        doctorId: doctorId,
+        appointmentScheduledOn: appointment?.scheduledOn!,
+      }
+      const { data, errors } = await client.mutations.createConsultationWithRecipes({consultation: payload, recipes: recipes})
+      
+      if (errors) {
+        console.error("Error creating appointment:", errors)
+        toast.error("Error al crear al appointment", {
+          description: errors[0]["message"]
+        })
+      } else if (data) {
+        const completedAppointment: CompletedAppointment = {
+          ...appointment!,
+          reason: values.reason,
+        }
+        setCompletedAppointments((prev) => [...prev, completedAppointment])
+        setOpenDialog(false)
+        toast.success("Consulta registrada con exito", {
+          description: "La consulta ha sido registrada correctamente.",
+        })
+        form.reset()
+      }
     } catch (err) {
       console.error("Create failed:", err)
       toast.error("Algo salio mal...")
@@ -248,7 +243,7 @@ export default function AppointmentsPage() {
     )
 
   return (
-    <div className="p-6">
+    <div className="sm:p-6">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-bold">Consultas</h1>
 

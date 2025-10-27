@@ -3,7 +3,7 @@ import {
   AdminCreateUserCommand,
   AdminAddUserToGroupCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
-import type { Schema } from "../../data/resource";
+import type { Schema } from "../resource";
 import { Amplify } from 'aws-amplify';
 import { generateClient } from 'aws-amplify/data';
 import { getAmplifyDataClientConfig } from '@aws-amplify/backend/function/runtime';
@@ -16,7 +16,9 @@ Amplify.configure(resourceConfig, libraryOptions);
 const schemaClient = generateClient<Schema>();
 const cognitoClient = new CognitoIdentityProviderClient({});
 
-export const handler = async (event: any) => {
+type Handler = Schema["createDoctorWithUser"]["functionHandler"]
+
+export const handler: Handler = async (event) => {
   const { name, email, birthdate, gender, specialty } = event.arguments;
   console.log("createDoctorWithUser event:", event);
   const userpool_id = env.CARE_APP_USERPOOL_ID;
