@@ -66,14 +66,15 @@ const appointmentSchema = z.object({
 
 type AppointmentFormValues = z.infer<typeof appointmentSchema>
 type Appointment = {
-  readonly scheduledOn: string;
-  readonly patient: {
-    readonly name: string;
-    readonly cedula: Nullable<string>;
-  }
+    readonly status: "Registrada" | "Aprobada" | "Completada" | "Cancelada" | null;
+    readonly scheduledOn: string;
+    readonly doctor: {
+        readonly name: string;
+        readonly specialty: Nullable<string>;
+    }
 }
 
-export default function AppointmentsPage() {
+export default function MyAppointmentsPage() {
   const [appointments, setAppointments] = useState<Array<Appointment>>([])
   const [doctors, setDoctors] = useState<Array<Schema["Doctor"]["updateType"]>>([])
   const [specialties, setSpecialties] = useState<string[]>([])
@@ -112,7 +113,7 @@ export default function AppointmentsPage() {
   useEffect(() => {
     const loadAppointments = async () => {
       try {
-        // const { data, errors } = await client.models.Appointment.list({ doctorId: "1", selectionSet: ["scheduledOn", "patient.name", "patient.cedula"] })
+        const { data, errors } = await client.models.Appointment.listAppointmentByPatientIdAndScheduledOn({ patientId: "1" }, { selectionSet: ["scheduledOn", "status", "doctor.name", "doctor.specialty"] } )
         setTimeout(() => {
           const specialties = [
             "Cardiologia",
@@ -122,16 +123,18 @@ export default function AppointmentsPage() {
           const appointments = [
             {
               scheduledOn: "20 de Octubre, 2025 - 8:30PM",
-              patient: {
+              status: "Aprobada" as any,
+              doctor: {
                 name: "Mario Lopez",
-                cedula: "Neurocirugia"
+                specialty: "Neurocirugia"
               }
             },
             {
               scheduledOn: "25 de Octubre, 2025 - 2:30PM",
-              patient: {
+              status: "Aprobada" as any,
+              doctor: {
                 name: "Maria Gutierrez",
-                cedula: "Cardiologia"
+                specialty: "Cardiologia"
               }
             }
           ]
@@ -433,8 +436,8 @@ export default function AppointmentsPage() {
             <Item variant="outline" key={apt.scheduledOn}>
               <ItemContent>
                 <ItemTitle>
-                  {apt.patient.name}{" "}
-                  <span className="text-muted-foreground hidden sm:block">solicita cita para {apt.doctor.specialty ?? "Medicina General"}</span>
+                  Cita con Dr. {apt.doctor.name}{" "}
+                  <span className="text-muted-foreground hidden sm:block">especialista en {apt.doctor.specialty ?? "Medicina General"}</span>
                 </ItemTitle>
                 <ItemDescription>
                   Agendada para {apt.scheduledOn}
