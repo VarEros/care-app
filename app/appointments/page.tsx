@@ -433,8 +433,8 @@ export default function AppointmentsPage() {
             <Item variant="outline" key={apt.scheduledOn}>
               <ItemContent>
                 <ItemTitle>
-                  {apt.patient.name}{" "}
-                  <span className="text-muted-foreground hidden sm:block">solicita cita para {apt.doctor.specialty ?? "Medicina General"}</span>
+                  Cita con {apt.patient.name}{" "}
+                  <span className="text-muted-foreground hidden sm:block">con cedula {apt.patient.cedula}</span>
                 </ItemTitle>
                 <ItemDescription>
                   Agendada para {apt.scheduledOn}
