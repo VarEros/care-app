@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/item"
 import { toast } from "sonner"
 import { DoctorScheduleSheet } from "./components/sheet"
+import { DoctorSchema } from "./types"
 
 const doctorSchema = z.object({
   name: z.string().min(2, "El nombre es requerido"),
@@ -59,7 +60,6 @@ const doctorSchema = z.object({
 })
 
 type DoctorFormValues = z.infer<typeof doctorSchema>
-type DoctorSchema = Schema["Doctor"]["type"]
 
 export default function DoctorsPage() {
   const [doctors, setDoctors] = useState<Array<DoctorSchema>>([])
@@ -69,16 +69,17 @@ export default function DoctorsPage() {
   const [openSheet, setOpenSheet] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
+  const formDefaultValues = {
+    name: "",
+    email: "",
+    birthdate: "",
+    gender: undefined,
+    specialty: "",
+  }
   // Setup form
   const form = useForm<DoctorFormValues>({
     resolver: zodResolver(doctorSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      birthdate: "",
-      gender: undefined,
-      specialty: "",
-    },
+    defaultValues: formDefaultValues,
   })
 
   // Load doctors on mount
@@ -91,12 +92,14 @@ export default function DoctorsPage() {
               id: "1",
               name: "Juan Perez",
               email: "juanperez@gmail.com",
-              specialty: "Neurologia"
+              specialty: "Neurologia",
+              gender: "Femenino"
             },
             {
               id: "2",
               name: "Juan Bolivar",
-              email: "juanbolivar@gmail.com"
+              email: "juanbolivar@gmail.com",
+              gender: "Masculino"
             }
           ] as DoctorSchema[];
           setDoctors(doctors);
@@ -115,13 +118,39 @@ export default function DoctorsPage() {
     loadDoctors()
   }, [])
 
+  useEffect(() => {
+    if (openDialog) return;
+    if (selectedDoctor) {
+      setTimeout(() => {
+        setSelectedDoctor(null)
+        form.reset(formDefaultValues)
+      }, 500);
+    }
+  }, [openDialog])
+  
+
   const handleBusinessHours = (doc: DoctorSchema) => {
-    //setSelectedDoctor(doc)
+    setSelectedDoctor(doc)
     setOpenSheet(true)
   }
 
   const handleEditDoctor = (doc: DoctorSchema) => {
-    // setSelectedDoctor(doc)
+    setSelectedDoctor(doc)
+    // Map the doctor values to the form shape. Ensure birthdate is in yyyy-mm-dd for the <input type="date" />
+    form.reset({
+      name: doc.name ?? "",
+      email: doc.email ?? "",
+      birthdate: doc.birthdate
+        ? // if birthdate is a Date or ISO string, normalize to yyyy-mm-dd
+          (() => {
+            const d = typeof doc.birthdate === "string" ? new Date(doc.birthdate) : (doc.birthdate as unknown as Date)
+            return isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10)
+          })()
+        : "",
+      gender: (doc.gender as DoctorFormValues["gender"]) ?? undefined,
+      specialty: doc.specialty ?? "",
+    })
+
     setOpenDialog(true)
   }
 
@@ -130,7 +159,15 @@ export default function DoctorsPage() {
     setSubmitting(true)
     if (!values.specialty) values.specialty = undefined
     try {
-      const { data, errors } = await client.mutations.createDoctorWithUser(values)
+        let data, errors;
+
+        if (selectedDoctor) {
+          const { email, ...restValues } = values;
+          const payload = { ...restValues, id: selectedDoctor.id };
+          ({ data, errors } = await client.models.Doctor.update(payload));
+        } else {
+          ({ data, errors } = await client.mutations.createDoctorWithUser(values));
+        }
       if (errors) {
         console.error("Error creating doctor:", errors)
         toast.error("Error al crear al doctor", {
@@ -162,7 +199,7 @@ export default function DoctorsPage() {
 
   return (
     <div className="sm:p-6">
-      <DoctorScheduleSheet openSheet={openSheet} setOpenSheet={setOpenSheet}/>
+      <DoctorScheduleSheet openSheet={openSheet} setOpenSheet={setOpenSheet} doctor={selectedDoctor!}/>
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-bold">Doctores</h1>
 
@@ -174,9 +211,9 @@ export default function DoctorsPage() {
 
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Registro de Doctor</DialogTitle>
+              <DialogTitle>{selectedDoctor ? "Edición de Doctor" : "Registro de Doctor"}</DialogTitle>
               <DialogDescription>
-                Llena el formulario para crear un doctor junto a su perfil de usuario, el nuevo doctor podra entrar al sistema sin necesidad de introduccir contraseña.
+                {selectedDoctor ? "Actualiza los datos del doctor desde esta ventana" : "Llena el formulario para crear un doctor junto a su perfil de usuario, el nuevo doctor podra entrar al sistema sin necesidad de introduccir contraseña."}
               </DialogDescription>
             </DialogHeader>
 
@@ -205,7 +242,7 @@ export default function DoctorsPage() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="doctor@ejemplo.com" {...field} />
+                        <Input disabled={selectedDoctor ? true : false} type="email" placeholder="doctor@ejemplo.com" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

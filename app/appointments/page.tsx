@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/form"
 import {
   Item,
+  ItemActions,
   ItemContent,
   ItemDescription,
   ItemTitle,
@@ -124,14 +125,14 @@ export default function AppointmentsPage() {
               scheduledOn: "20 de Octubre, 2025 - 8:30PM",
               patient: {
                 name: "Mario Lopez",
-                cedula: "Neurocirugia"
+                cedula: "001-240504-1023S"
               }
             },
             {
               scheduledOn: "25 de Octubre, 2025 - 2:30PM",
               patient: {
                 name: "Maria Gutierrez",
-                cedula: "Cardiologia"
+                cedula: "001-240504-1023S"
               }
             }
           ]
@@ -149,54 +150,6 @@ export default function AppointmentsPage() {
 
     loadAppointments()
   }, [])
-
-  // Load doctors on mount
-  useEffect(() => {
-    if (!specialty) return
-    setLoadingDoctors(true)
-    const loadDoctors = async () => {
-      try {
-        // const { data, errors } = await client.models.Doctor.list({ filter: { status: { eq: "Activo" }, specialty: { eq: specialty ?? undefined } }, selectionSet: ["id", "name", "businessHours"] })
-        setTimeout(() => {
-          const doctors = [
-            {
-              id: "1",
-              name: "Juan Perez",
-              specialty: "Neurologia",
-              businessHours: {
-                monday: "8:00-17:00",
-                tuesday: "8:00-17:00",
-                wednesday: "8:00-17:00",
-                thursday: "8:00-17:00",
-                friday: "8:00-17:00"
-              }
-            },
-            {
-              id: "2",
-              name: "Juan Bolivar",
-              businessHours: {
-                monday: "8:00-17:00",
-                tuesday: "8:00-17:00",
-                wednesday: "8:00-17:00",
-                thursday: "8:00-17:00",
-                friday: "8:00-17:00"
-              }
-            }
-          ];
-          setDoctors(doctors)
-          setLoadingDoctors(false)
-        }, 1000)
-        // if (errors) console.error(errors)
-        // else setDoctors(data)
-      } catch (err) {
-        console.error("Failed to load appointments:", err)
-      } finally {
-        // setLoadingDoctors(false)
-      }
-    }
-
-    loadDoctors()
-  }, [specialty])
 
   // Handle appointment creation
   const onSubmit = async (values: AppointmentFormValues) => {
@@ -231,6 +184,10 @@ export default function AppointmentsPage() {
         <span className="ml-2">Cargando citas...</span>
       </div>
     )
+
+  const handleRevise = (apt: Appointment)=> {
+    
+  }
 
   return (
     <div className="sm:p-6">
@@ -433,13 +390,18 @@ export default function AppointmentsPage() {
             <Item variant="outline" key={apt.scheduledOn}>
               <ItemContent>
                 <ItemTitle>
-                  Cita con {apt.patient.name}{" "}
-                  <span className="text-muted-foreground hidden sm:block">con cedula {apt.patient.cedula}</span>
+                  Cita con {apt.patient.name}
+                  <span className="text-muted-foreground hidden sm:block"> {apt.patient.cedula}</span>
                 </ItemTitle>
                 <ItemDescription>
                   Agendada para {apt.scheduledOn}
                 </ItemDescription>
               </ItemContent>
+              <ItemActions>
+                <Button onClick={() => handleRevise(apt)} variant="secondary" size="sm">
+                  Revisar
+                </Button>
+              </ItemActions>
             </Item>
           ))}
         </ul>
