@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/item"
 import { toast } from "sonner"
 import { DoctorScheduleSheet } from "./components/sheet"
-import { DoctorSchema } from "./types"
+import { doctorList, DoctorSchema } from "./types"
 
 const doctorSchema = z.object({
   name: z.string().min(2, "El nombre es requerido"),
@@ -56,13 +56,14 @@ const doctorSchema = z.object({
   gender: z.enum(["Masculino", "Femenino", "Otro"], {
     required_error: "El genero es requerido",
   }),
-  specialty: z.string().optional().or(z.literal("")),
+  specialty: z.string().nonempty("La especialidad requerida"),
 })
 
 type DoctorFormValues = z.infer<typeof doctorSchema>
 
 export default function DoctorsPage() {
   const [doctors, setDoctors] = useState<Array<DoctorSchema>>([])
+  const [specialties, setSpecialties] = useState<Array<string>>([])
   const [selectedDoctor, setSelectedDoctor] = useState<DoctorSchema | null>(null)
   const [loading, setLoading] = useState(true)
   const [openDialog, setOpenDialog] = useState(false)
@@ -87,21 +88,7 @@ export default function DoctorsPage() {
     const loadDoctors = async () => {
       try {
         setTimeout(() => {
-          const doctors = [
-            {
-              id: "1",
-              name: "Juan Perez",
-              email: "juanperez@gmail.com",
-              specialty: "Neurologia",
-              gender: "Femenino"
-            },
-            {
-              id: "2",
-              name: "Juan Bolivar",
-              email: "juanbolivar@gmail.com",
-              gender: "Masculino"
-            }
-          ] as DoctorSchema[];
+          const doctors = doctorList as DoctorSchema[];
           setDoctors(doctors);
           setLoading(false);
         }, 2000);
@@ -119,7 +106,27 @@ export default function DoctorsPage() {
   }, [])
 
   useEffect(() => {
-    if (openDialog) return;
+    const loadSpecialties = async () => {
+      try {
+        // const { data, errors } = await client.models.Catalog.list({ type: "Especialidades", selectionSet: ["value"]})
+        // if (errors) console.error(errors)
+        // else setSpecialties(data.map(catalog => catalog.value))
+        setTimeout(() => {
+          setSpecialties(["Neurologia", "Ojontologo"])
+          if (selectedDoctor){
+            form.setValue("specialty", selectedDoctor!.specialty)
+          }
+        }, 1000);
+      } catch (err) {
+        console.error("Failed to load doctors:", err)
+      } finally {
+        // setLoading(false)
+      }
+    }
+    if (openDialog) {
+      if (specialties.length !== 0) return
+      loadSpecialties()
+    }
     if (selectedDoctor) {
       setTimeout(() => {
         setSelectedDoctor(null)
@@ -157,7 +164,6 @@ export default function DoctorsPage() {
   // Handle doctor creation
   const onSubmit = async (values: DoctorFormValues) => {
     setSubmitting(true)
-    if (!values.specialty) values.specialty = undefined
     try {
         let data, errors;
 
@@ -199,7 +205,7 @@ export default function DoctorsPage() {
 
   return (
     <div className="sm:p-6">
-      <DoctorScheduleSheet openSheet={openSheet} setOpenSheet={setOpenSheet} doctor={selectedDoctor!}/>
+      {selectedDoctor && <DoctorScheduleSheet openSheet={openSheet} setOpenSheet={setOpenSheet} doctor={selectedDoctor!}/>}
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-bold">Doctores</h1>
 
@@ -299,7 +305,28 @@ export default function DoctorsPage() {
                     <FormItem>
                       <FormLabel>Especialidad (opcional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="Cardiologia" {...field} />
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value || ""}
+                          disabled={!specialties.length}
+                        >
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={
+                                specialties.length === 0
+                                  ? "Cargando especialidades..."
+                                  : "Selecciona una especialidad"
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {specialties.map((s, index) => (
+                              <SelectItem key={index} value={s}>
+                                {s}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </FormControl>
                       <FormMessage />
                     </FormItem>

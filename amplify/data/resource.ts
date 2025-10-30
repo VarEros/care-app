@@ -20,7 +20,7 @@ const baseDoctor = {
   email: a.email().required(),
   birthdate: a.date().required(),
   gender: genders,
-  specialty: a.string()
+  specialty: a.string().required()
 }
 
 const baseRecipe = {
@@ -144,6 +144,14 @@ export const schema = a.schema({
         allow.group("Doctors"),
       ])
       .handler(a.handler.function(createConsultationWithRecipesHandler)),
+
+    Catalog: a.model ({
+      type: a.string().required(),
+      value: a.string().required(),
+      status: a.enum(["Activo", "Inactivo"]),
+      createdAt: a.datetime().required(),
+    })
+    .identifier(["type", "createdAt"])
 })
 .authorization((allow) => [allow.resource(postConfirmation),
   allow.resource(createDoctorWithUserHandler)]);
