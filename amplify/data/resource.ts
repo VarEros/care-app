@@ -14,6 +14,7 @@ export const createConsultationWithRecipesHandler = defineFunction({
 const dosageFormats = a.enum(["mg", "ml", "pastilla", "gota", "tableta", "cápsula"])
 const frequencyTypes = a.enum(["Horas", "Dias", "Semanas"])
 const genders =  a.enum(["Masculino", "Femenino", "Otro"])
+const appointmentTypes = a.enum(["Primaria", "Seguimiento", "Preventiva"])
 
 const baseDoctor = {
   name: a.string().required(),
@@ -79,8 +80,9 @@ export const schema = a.schema({
       doctorId: a.id().required(), // FK → Doctor
       patientId: a.id().required(), // FK → Patient
       scheduledOn: a.datetime().required(),
-      type: a.enum(["Primaria", "Seguimiento", "Preventiva"]),
-      reason: a.string().required().authorization((allow) => allow.group("Patients").to(["read"])),
+      type: appointmentTypes,
+      motive: a.string(),
+      reason: a.string().authorization((allow) => allow.group("Patients").to(["read"])),
       status: a.enum(["Registrada", "Aprobada", "Completada", "Cancelada"]),
       doctor: a.belongsTo("Doctor", "doctorId"),
       patient: a.belongsTo("Patient", "patientId"),

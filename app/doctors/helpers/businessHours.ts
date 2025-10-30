@@ -1,3 +1,4 @@
+import { dayLabels } from "@/lib/constants";
 import { BusinessHoursData, BusinessHoursForm } from "../types";
 
 export const formToData = (form: BusinessHoursForm): BusinessHoursData => {
@@ -10,16 +11,6 @@ export const formToData = (form: BusinessHoursForm): BusinessHoursData => {
     },
     {}
   );
-};
-
-export const dayLabels: Record<string, string> = {
-  monday: "Lunes",
-  tuesday: "Martes",
-  wednesday: "Miércoles",
-  thursday: "Jueves",
-  friday: "Viernes",
-  saturday: "Sábado",
-  sunday: "Domingo",
 };
 
 export const dataToForm = (data: BusinessHoursData): BusinessHoursForm => {

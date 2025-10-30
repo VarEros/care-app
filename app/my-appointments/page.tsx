@@ -135,7 +135,7 @@ export default function MyAppointmentsPage() {
         <h1 className="text-xl font-bold">Citas</h1>
 
         {/* Dialog for adding new Cita */}
-        <CreateAppointmentDialog specialties={specialties} doctors={doctors}></CreateAppointmentDialog>
+        <CreateAppointmentDialog/>
       </div>
 
       {/* Doctor List */}

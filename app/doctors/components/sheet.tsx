@@ -17,7 +17,8 @@ import { Switch } from "@/components/ui/switch"
 import { client } from "@/lib/amplifyClient"
 import { toast } from "sonner"
 import { BusinessHoursData, BusinessHoursForm, DoctorSchema } from "../types"
-import { dataToForm, dayLabels } from "../helpers/businessHours"
+import { dataToForm } from "../helpers/businessHours"
+import { dayLabels } from "@/lib/constants"
 
 const defaultHours: BusinessHoursForm = {
   monday: { enabled: true, start: "09:00", end: "17:00" },

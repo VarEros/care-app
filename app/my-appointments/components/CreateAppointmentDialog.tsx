@@ -5,7 +5,7 @@ import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { es } from "date-fns/locale"
-import { Loader2, Calendar as CalendarIcon, ChevronsUpDown } from "lucide-react"
+import { Loader2, Calendar as CalendarIcon, ChevronsUpDown, Check } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label"
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -42,8 +43,16 @@ import {
 } from "@/components/ui/select"
 import { Command, CommandInput, CommandList, CommandItem, CommandEmpty, CommandGroup } from "@/components/ui/command"
 import { Doctor, doctorList } from "../types"
+import { client } from "@/lib/amplifyClient"
+import { cn } from "@/lib/utils"
+import { convertTo12Hour, weekdayKeyFromDate } from "../helpers/dateTime"
+import { dayLabels } from "@/lib/constants"
+import { format } from "date-fns"
 
+const appointmentTypes = Object.values(client.enums.AppointmentType.values()) as string[]
 const appointmentSchema = z.object({
+  motive: z.string(),
+  type: z.enum([...appointmentTypes] as [string, ...string[]]),
   specialty: z.string().min(1),
   doctorId: z.string().min(1),
   dateScheduled: z.string().nonempty("La fecha es requerida").refine((v) => !isNaN(Date.parse(v)), "Fecha inválida"),
@@ -53,15 +62,21 @@ const appointmentSchema = z.object({
 type AppointmentFormValues = z.infer<typeof appointmentSchema>
 
 export function CreateAppointmentDialog() {
-  const [open, setOpen] = useState(false)
   const [specialties, setSpecialties] = useState<Array<string>>([])
-  const [doctors, setDoctors] = useState<Doctor | null>(null)
+  const [doctors, setDoctors] = useState<Array<Doctor>>([])
+  const [appointments, setAppointments] = useState<Array<string>>([])
+
   const [step, setStep] = useState(0)
+  const [loadingAppointments, setLoadingAppointments] = useState(true)
+  const [open, setOpen] = useState(false)
+  const [openDoctors, setOpenDoctors] = useState(false)
   const [openCalendar, setOpenCalendar] = useState(false)
 
   const form = useForm<AppointmentFormValues>({
     resolver: zodResolver(appointmentSchema),
     defaultValues: {
+      motive: "",
+      type: "",
       specialty: "",
       doctorId: "",
       dateScheduled: "",
@@ -69,6 +84,13 @@ export function CreateAppointmentDialog() {
     },
     mode: "onTouched",
   })
+
+  const selectedSpecialty = form.watch("specialty")
+  const selectedDoctorId = form.watch("doctorId")
+  const selectedDoctor = doctors!.find((d) => d.id === selectedDoctorId)
+  const selectedDateIso = form.watch("dateScheduled")
+  const selectedDate = selectedDateIso ? new Date(selectedDateIso) : undefined
+  const selectedWeekday = selectedDateIso ? weekdayKeyFromDate(selectedDate!) : undefined
 
   useEffect(() => {
     if (!open) return
@@ -96,7 +118,7 @@ export function CreateAppointmentDialog() {
         setTimeout(() => {
           const doctors = doctorList as Doctor[];
           setDoctors(doctors);
-          setLoading(false);
+          // setLoading(false);
         }, 2000);
         // const { data, errors } = await client.models.Doctor.list()
         // if (errors) console.error(errors)
@@ -111,20 +133,25 @@ export function CreateAppointmentDialog() {
     loadSpecialties()
     loadDoctors()
   }, [open])
-  
 
-  // Helpers
-  const weekdayKeyFromDate = (date: Date) => {
-    // map JS Date.getDay() to keys used in businessHours
-    const map = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
-    return map[date.getDay()]
-  }
-
-  const selectedSpecialty = form.watch("specialty")
-  const selectedDoctorId = form.watch("doctorId")
-  const selectedDoctor = doctors!.find((d) => d.id === selectedDoctorId)
-  const selectedDateIso = form.watch("dateScheduled")
-  const selectedDate = selectedDateIso ? new Date(selectedDateIso) : undefined
+  // useEffect(() => {
+  //   if (!selectedDateIso || !selectedDoctorId) return;
+  //   setLoadingAppointments(true)
+  //   const dayOfDate = selectedDateIso.split("T")[0]
+  //   const loadAppointments = async () => {
+  //     try {
+  //       const { data, errors } = await client.models.Appointment.list({ doctorId: selectedDoctorId, scheduledOn: { beginsWith: dayOfDate}, selectionSet: ["scheduledOn"]})
+  //       if (errors) console.error(errors)
+  //       else setAppointments(data.map(apt => apt.scheduledOn))
+  //     } catch (err) {
+  //       console.error("Failed to load appointments:", err)
+  //     } finally {
+  //       setLoadingAppointments(false)
+  //     }
+  //   }
+  //   ["09:00", "09:20", "10:40", "11:00", "11:40", "14:40", "15:40", "16:00" , "16:40"]
+  //   loadAppointments()
+  // }, [selectedDateIso])
 
   // compute available weekday keys from selected doctor's businessHours
   const availableWeekdays = useMemo(() => {
@@ -135,37 +162,31 @@ export function CreateAppointmentDialog() {
   // calendar day enabled by businessHours of selected doctor
   const isOpenDay = (date: Date) => {
     if (!selectedDoctor?.businessHours) return false
-    const key = weekdayKeyFromDate(date)
-    const range = (selectedDoctor.businessHours as any)?.[key]
-    if (!range) return false
-    // treat start===end or invalid as closed
-    if (typeof range.start !== "number" || typeof range.end !== "number") return false
-    return range.end > range.start
+    // return false for previous days than today
+    if (date < new Date(new Date().setHours(0,0,0,0))) return false
+    const isInBusinessHours = availableWeekdays.includes(weekdayKeyFromDate(date))
+    return isInBusinessHours
   }
 
-  // generate hour options (HH) based on selected date's weekday businessHours
-  const hourOptions = useMemo(() => {
-    if (!selectedDate || !selectedDoctor?.businessHours) return []
-    const key = weekdayKeyFromDate(selectedDate)
-    const range = (selectedDoctor.businessHours as any)?.[key]
-    if (!range) return []
-    const start = Math.max(0, Math.floor(range.start))
-    const end = Math.min(23, Math.ceil(range.end)) // end is exclusive in our generation decision below
-    const hours: number[] = []
-    // create starting hours from start .. end - 1 (for example 8..16 for 8-17)
-    for (let h = start; h < end; h++) {
-      hours.push(h)
+  // description with the startTime and EndTime of the BusinessHours
+  const dayBusinessHoursDescription = useMemo(() => {
+    if (!selectedDateIso) return ""
+
+    const dayLabel = dayLabels[selectedWeekday!]
+    const startTime = convertTo12Hour(selectedDoctor!.businessHours![selectedWeekday!].start)
+    const endTime = convertTo12Hour(selectedDoctor!.businessHours![selectedWeekday!].end)
+    console.log("dateISO: " + selectedDateIso)
+
+    return `El Dr.${selectedDoctor!.name} atiende los ${dayLabel} desde las ${startTime} hasta las ${endTime}`
+  }, [selectedDateIso])
+
+
+    const handleTimeChange = (value: string) => {
+    const minutes = parseInt(value.split(":")[1], 10)
+    // Only accept 00, 20, 40 minutes
+    if ([0, 20, 40].includes(minutes)) {
+      form.setValue("timeScheduled", value)
     }
-    return hours
-  }, [selectedDate, selectedDoctor])
-
-  const minuteOptions = [0, 15, 30, 45]
-
-  // generate time string HH:MM from hour and minute
-  const formatTime = (h: number, m: number) => {
-    const hh = String(h).padStart(2, "0")
-    const mm = String(m).padStart(2, "0")
-    return `${hh}:${mm}`
   }
 
   const onNext = async () => {
@@ -182,6 +203,14 @@ export function CreateAppointmentDialog() {
       const ok = await form.trigger("dateScheduled")
       if (!ok) return
       setStep(3)
+    } else if (step === 3) {
+      const ok = await form.trigger("timeScheduled")
+      if (!ok) return
+      setStep(4)
+    } else if (step === 4) {
+      const ok = await form.trigger("motive") && await form.trigger("type")
+      if (!ok) return
+      setStep(5)
     }
   }
 
@@ -208,7 +237,7 @@ export function CreateAppointmentDialog() {
         <Button className="w-[200px]">Agendar Cita</Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-[520px]">
+      <DialogContent className="sm:max-w-[620px]">
         <DialogHeader>
           <DialogTitle>Agendar Cita</DialogTitle>
         </DialogHeader>
@@ -221,6 +250,8 @@ export function CreateAppointmentDialog() {
               <div className={`px-3 py-1 rounded ${step === 1 ? "bg-primary text-primary-foreground" : "bg-muted"}`}>2. Doctor</div>
               <div className={`px-3 py-1 rounded ${step === 2 ? "bg-primary text-primary-foreground" : "bg-muted"}`}>3. Fecha</div>
               <div className={`px-3 py-1 rounded ${step === 3 ? "bg-primary text-primary-foreground" : "bg-muted"}`}>4. Hora</div>
+              <div className={`px-3 py-1 rounded ${step === 4 ? "bg-primary text-primary-foreground" : "bg-muted"}`}>5. Info</div>
+              <div className={`px-3 py-1 rounded ${step === 5 ? "bg-primary text-primary-foreground" : "bg-muted"}`}>6. Resumen</div>
             </div>
 
             {/* STEP 0 - Specialty */}
@@ -273,7 +304,7 @@ export function CreateAppointmentDialog() {
                     <FormItem>
                       <FormLabel>Doctor</FormLabel>
                       <FormControl>
-                        <Popover>
+                        <Popover open={openDoctors} onOpenChange={setOpenDoctors}>
                           <PopoverTrigger asChild>
                             <Button variant="outline" className="justify-between w-full" role="combobox" aria-expanded={false}>
                               {field.value ? doctors.find((d) => d.id === field.value)?.name : "Selecciona un doctor..."}
@@ -294,12 +325,19 @@ export function CreateAppointmentDialog() {
                                         value={d.id}
                                         onSelect={(v) => {
                                           field.onChange(v)
+                                          setOpenDoctors(false)
                                           // reset date/time when changing doctor
                                           form.setValue("dateScheduled", "")
                                           form.setValue("timeScheduled", "")
                                         }}
                                       >
                                         {d.name}
+                                        <Check
+                                          className={cn(
+                                            "ml-auto",
+                                            field.value === d.id ? "opacity-100" : "opacity-0"
+                                          )}
+                                        />
                                       </CommandItem>
                                     ))}
                                 </CommandGroup>
@@ -315,7 +353,7 @@ export function CreateAppointmentDialog() {
               </div>
             )}
 
-            {/* STEP 2 - Date & Time */}
+            {/* STEP 2 - Date */}
             {step === 2 && (
               <div className="space-y-3">
                 {/* Date picker */}
@@ -358,75 +396,165 @@ export function CreateAppointmentDialog() {
                         </Popover>
                       </FormControl>
                       <FormMessage />
+                      <FormDescription>
+                        { dayBusinessHoursDescription }
+                      </FormDescription>
                     </FormItem>
                   )}
                 />
               </div>
             )}
 
-            {/* STEP 2 - Date & Time */}
+            {/* STEP 3 - Time */}
             {step === 3 && (
-              <div className="space-y-3">
-                {/* Date picker */}
-               <FormField
-                    control={form.control}
-                    name="timeScheduled"
-                    render={({ field }) => {
-                      // derive selected hour & minute from field.value if present
-                      const [hh = "", mm = ""] = (field.value || "").split(":")
-                      return (
-                        <FormItem>
-                          <FormLabel>Hora</FormLabel>
-                          <FormControl>
-                            <div className="flex gap-2">
-                              <Select
-                                value={hh || undefined}
-                                onValueChange={(h) => {
-                                  const minute = mm || "00"
-                                  if (h) field.onChange(`${h}:${minute}`)
-                                  else field.onChange("")
-                                }}
-                              >
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="HH" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {hourOptions.length === 0 && <SelectItem value="">-</SelectItem>}
-                                  {hourOptions.map((h) => (
-                                    <SelectItem key={h} value={String(h).padStart(2, "0")}>
-                                      {String(h).padStart(2, "0")}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+              <div className="space-y-6">
+                {/* 🕒 Time picker field */}
+                <FormField
+                  control={form.control}
+                  name="timeScheduled"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Hora</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="time"
+                          value={field.value || "09:00"}
+                          onChange={(e) => {
+                            const value = e.target.value
+                            const minutes = parseInt(value.split(":")[1], 10)
+                            if ([0, 20, 40].includes(minutes)) {
+                              field.onChange(value)
+                            }
+                          }}
+                          step={1200}
+                          className="w-28"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      
+                      <FormDescription>
+                        - {dayBusinessHoursDescription}. <br/>
+                        - Las citas tienen una duración de 20 minutos.  <br/>
+                        - Los horarios marcados en rojo ya están ocupados.<br/>
+                      </FormDescription>
+                    </FormItem>
+                  )}
+                />
 
-                              <Select
-                                value={mm || undefined}
-                                onValueChange={(m) => {
-                                  const hour = hh || (hourOptions[0] !== undefined ? String(hourOptions[0]).padStart(2, "0") : "00")
-                                  if (hour) field.onChange(`${hour}:${m}`)
-                                  else field.onChange("")
-                                }}
-                              >
-                                <SelectTrigger className="w-28">
-                                  <SelectValue placeholder="MM" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {minuteOptions.map((m) => (
-                                    <SelectItem key={m} value={String(m).padStart(2, "0")}>
-                                      {String(m).padStart(2, "0")}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
+                {/* 🚫 Taken times display */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-muted-foreground">Horarios ocupados</h4>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                    {appointments.length !== 0 ? appointments.map(
+                      (time) => (
+                        <Button
+                          key={time}
+                          variant="destructive"
+                          disabled
+                          className="w-full cursor-not-allowed opacity-70"
+                        >
+                          {time}
+                        </Button>
                       )
-                    }}
-                  />
+                    ) : 
+                    <p className="text-sm text-muted-foreground col-span-full">No hay horarios ocupados para esta fecha.</p>
+                    }
+                  </div>
                 </div>
+
+                {/* ✅ Suggestion hint */}
+                <div className="rounded-md border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
+                  Nota: Selecciona una hora que no esté marcada como ocupada para agendar tu cita.
+                </div>
+              </div>
+            )}
+
+            {/* STEP 4 - Specialty */}
+            {step === 4 && (
+              <div className="space-y-3">
+                <FormField
+                  control={form.control}
+                  name="specialty"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Especialidad (opcional)</FormLabel>
+                      <FormControl>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value || ""}
+                          disabled={!specialties.length}
+                        >
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={
+                                specialties.length === 0
+                                  ? "Cargando especialidades..."
+                                  : "Selecciona una especialidad"
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {specialties.map((s, index) => (
+                              <SelectItem key={index} value={s}>
+                                {s}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+
+            {/* STEP 5 - Summary */}
+            {step === 5 && (
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold">Resumen de la cita</h3>
+                <p className="text-sm text-muted-foreground">
+                  Verifica que toda la información sea correcta antes de confirmar.
+                </p>
+
+                <div className="w-full rounded-lg border bg-muted/30 p-6 space-y-4">
+                  <p className="text-base leading-relaxed">
+                    Estoy programando una cita con el doctor... <br/>
+                    <span className="font-semibold text-foreground">
+                      Dr. {selectedDoctor?.name || "—"}
+                    </span>
+                    .
+                  </p>
+
+                  <p className="text-base leading-relaxed">
+                    Especialista en... <br/>
+                    <span className="font-semibold text-foreground">
+                      {form.getValues("specialty") || "—"}
+                    </span>
+                    .
+                  </p>
+
+                  <p className="text-base leading-relaxed">
+                    Para el día... <br/>
+                    <span className="font-semibold text-foreground">
+                      {form.getValues("dateScheduled")
+                        ? format(form.getValues("dateScheduled"), "EEEE, d 'de' MMMM 'del' yyyy", {
+                            locale: es,
+                          })
+                        : "—"}
+                    </span>
+                    .
+                  </p>
+
+                  <p className="text-base leading-relaxed">
+                    A las... <br/>
+                    <span className="font-semibold text-foreground">
+                      {convertTo12Hour(form.getValues("timeScheduled"))}
+                    </span>
+                    .
+                  </p>
+                </div>
+              </div>
             )}
 
             {/* Actions */}
@@ -440,13 +568,13 @@ export function CreateAppointmentDialog() {
               </div>
 
               <div className="flex items-center gap-2">
-                {step < 3 && (
+                {step < 5 && (
                   <Button onClick={onNext} type="button">
                     Siguiente
                   </Button>
                 )}
 
-                {step === 3 && (
+                {step === 5 && (
                   <DialogFooter>
                     <Button type="submit" className="w-40">
                       <span>Confirmar Cita</span>

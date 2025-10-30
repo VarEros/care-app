@@ -16,19 +16,17 @@ export type Doctor = {
   businessHours?: Record<
     string,
     {
-      start: number
-      end: number
+      start: string
+      end: string
     }
   >
 }
 
-export const doctorList = [
+export const doctorList: Doctor[] = [
   {
     id: "1",
     name: "Juan Perez",
-    email: "juanperez@gmail.com",
     specialty: "Neurologia",
-    gender: "Femenino",
     businessHours: {
       monday: { start: "09:40", end: "17:00" },
       tuesday: { start: "09:00", end: "17:00" },
@@ -40,8 +38,7 @@ export const doctorList = [
   {
     id: "2",
     name: "Juan Bolivar",
-    email: "juanbolivar@gmail.com",
-    gender: "Masculino",
+    specialty: "Neurologia",
     businessHours: {
       monday: { start: "08:00", end: "17:00" },
       tuesday: { start: "08:00", end: "17:00" },
