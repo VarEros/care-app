@@ -3,9 +3,6 @@
 import { useEffect, useState } from "react"
 import { client } from "@/lib/amplifyClient"
 import type { Schema } from "@/amplify/data/resource"
-import { z } from "zod"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2 } from "lucide-react"
 // shadcn/ui components
 import {
@@ -16,52 +13,29 @@ import {
 } from "@/components/ui/item"
 import { toast } from "sonner"
 import { CreateAppointmentDialog } from "./components/CreateAppointmentDialog"
-import { Appointment, Doctor, doctorList } from "./types"
-import { DoctorSchema } from "../doctors/types"
-
-const appointmentSchema = z.object({
-  doctorId: z.string(),
-  timeScheduled: z.string().min(2, "El nombre es requerido"),
-  dateScheduled: z
-    .string()
-    .nonempty("La fecha de nacimiento requerida")
-    .refine((val) => !isNaN(Date.parse(val)), "La fecha es invalida"),
-  type: z.enum(["Primaria", "Preventiva"], {
-    required_error: "El tipo es requerido",
-  }),
-})
-
-type AppointmentFormValues = z.infer<typeof appointmentSchema>
+import { Appointment } from "./types"
+import { fetchAuthSession } from "aws-amplify/auth"
 
 export default function MyAppointmentsPage() {
+  let patientId = "";
   const [appointments, setAppointments] = useState<Array<Appointment>>([])
-  const [doctors, setDoctors] = useState<Array<Doctor>>([])
-  const [specialties, setSpecialties] = useState<string[]>([])
-
   const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
 
-  // Setup form
-  const form = useForm<AppointmentFormValues>({
-    resolver: zodResolver(appointmentSchema),
-    defaultValues: {
-      doctorId: "",
-      timeScheduled: "",
-      dateScheduled: "",
-      type: undefined
-    },
-  })
   // Load doctors on mount
   useEffect(() => {
     const loadAppointments = async () => {
+
       try {
-        // const { data, errors } = await client.models.Appointment.listAppointmentByPatientIdAndScheduledOn({ patientId: "1" }, { selectionSet: ["scheduledOn", "status", "doctor.name", "doctor.specialty"] } )
+        const { tokens } = await fetchAuthSession();
+        const sub = tokens?.idToken?.payload["sub"] as string;
+        patientId = sub; 
+
+        // if (!sub) {
+        //   setLoading(false);
+        //   return;
+        // }
+        // const { data, errors } = await client.models.Appointment.listAppointmentByPatientIdAndScheduledOn({ patientId: patientId }, { selectionSet: ["scheduledOn", "status", "doctor.name", "doctor.specialty"] } )
         setTimeout(() => {
-          const specialties = [
-            "Cardiologia",
-            "Ortopedia"
-          ]
-          setSpecialties(specialties)
           const appointments = [
             {
               scheduledOn: "20 de Octubre, 2025 - 8:30PM",
@@ -95,32 +69,6 @@ export default function MyAppointmentsPage() {
     loadAppointments()
   }, [])
 
-  // Handle appointment creation
-  const onSubmit = async (values: AppointmentFormValues) => {
-    setSubmitting(true)
-    try {
-      // const { data, errors } = await client.models.Appointment.create(values)
-      // if (errors) {
-      //   console.error("Error creating appointment:", errors)
-      //   toast.error("Error al crear al appointment", {
-      //     description: errors[0]["message"]
-      //   })
-      // } else if (data) {
-      //   setAppointments((prev) => [...prev, data])
-      //   setOpenDialog(false)
-      //   toast.success("Cita creada con exito", {
-      //     description: values.doctorId + " ya puede ingresar al sistema."
-      //   })
-      //   form.reset()
-      // }
-    } catch (err) {
-      console.error("Create failed:", err)
-      toast.error("Algo salio mal...")
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
   if (loading)
     return (
       <div className="flex items-center justify-center h-64">
@@ -135,7 +83,7 @@ export default function MyAppointmentsPage() {
         <h1 className="text-xl font-bold">Citas</h1>
 
         {/* Dialog for adding new Cita */}
-        <CreateAppointmentDialog/>
+        <CreateAppointmentDialog setAppointments={setAppointments} patientId={patientId}/>
       </div>
 
       {/* Doctor List */}

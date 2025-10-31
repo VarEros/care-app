@@ -42,38 +42,46 @@ import {
   SelectItem,
 } from "@/components/ui/select"
 import { Command, CommandInput, CommandList, CommandItem, CommandEmpty, CommandGroup } from "@/components/ui/command"
-import { Doctor, doctorList } from "../types"
+import { Appointment, Doctor, doctorList } from "../types"
 import { client } from "@/lib/amplifyClient"
 import { cn } from "@/lib/utils"
 import { convertTo12Hour, weekdayKeyFromDate } from "../helpers/dateTime"
 import { dayLabels } from "@/lib/constants"
 import { format } from "date-fns"
+import { Schema } from "@/amplify/data/resource"
 
 const appointmentTypes = Object.values(client.enums.AppointmentType.values()) as string[]
-const appointmentSchema = z.object({
+const appointmentSchema = (appointments: string[]) => z.object({
   motive: z.string(),
-  type: z.enum([...appointmentTypes] as [string, ...string[]]),
-  specialty: z.string().min(1),
-  doctorId: z.string().min(1),
+  type: z.enum([...appointmentTypes] as [string, ...string[]], { message: "El tipo de cita es requerido"}),
+  specialty: z.string().min(1, "La especialidad es requerida"),
+  doctorId: z.string().min(1, "El doctor es requerido"),
   dateScheduled: z.string().nonempty("La fecha es requerida").refine((v) => !isNaN(Date.parse(v)), "Fecha inválida"),
-  timeScheduled: z.string().min(1, "La hora es requerida"),
+  timeScheduled: z.string().min(1, "La hora es requerida").refine((value) => !appointments.includes(value), "La hora seleccionada ya está ocupada"),
 })
 
-type AppointmentFormValues = z.infer<typeof appointmentSchema>
+interface Props {
+  setAppointments?: React.Dispatch<React.SetStateAction<Appointment[]>>;
+  patientId: string
+}
 
-export function CreateAppointmentDialog() {
+export const  CreateAppointmentDialog: React.FC<Props> = ({ setAppointments, patientId }) => {
   const [specialties, setSpecialties] = useState<Array<string>>([])
   const [doctors, setDoctors] = useState<Array<Doctor>>([])
-  const [appointments, setAppointments] = useState<Array<string>>([])
+  const [takenTimes, setTakenTimes] = useState<Array<string>>([])
 
   const [step, setStep] = useState(0)
   const [loadingAppointments, setLoadingAppointments] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
   const [open, setOpen] = useState(false)
   const [openDoctors, setOpenDoctors] = useState(false)
   const [openCalendar, setOpenCalendar] = useState(false)
 
+  const schema = appointmentSchema(takenTimes)
+  type AppointmentFormValues = z.infer<typeof schema>
+
   const form = useForm<AppointmentFormValues>({
-    resolver: zodResolver(appointmentSchema),
+    resolver: zodResolver(appointmentSchema(takenTimes)),
     defaultValues: {
       motive: "",
       type: "",
@@ -93,7 +101,7 @@ export function CreateAppointmentDialog() {
   const selectedWeekday = selectedDateIso ? weekdayKeyFromDate(selectedDate!) : undefined
 
   useEffect(() => {
-    if (!open) return
+    if (!open || specialties.length !== 0 && doctors.length !== 0) return
 
     const loadSpecialties = async () => {
       try {
@@ -134,24 +142,28 @@ export function CreateAppointmentDialog() {
     loadDoctors()
   }, [open])
 
-  // useEffect(() => {
-  //   if (!selectedDateIso || !selectedDoctorId) return;
-  //   setLoadingAppointments(true)
-  //   const dayOfDate = selectedDateIso.split("T")[0]
-  //   const loadAppointments = async () => {
-  //     try {
-  //       const { data, errors } = await client.models.Appointment.list({ doctorId: selectedDoctorId, scheduledOn: { beginsWith: dayOfDate}, selectionSet: ["scheduledOn"]})
-  //       if (errors) console.error(errors)
-  //       else setAppointments(data.map(apt => apt.scheduledOn))
-  //     } catch (err) {
-  //       console.error("Failed to load appointments:", err)
-  //     } finally {
-  //       setLoadingAppointments(false)
-  //     }
-  //   }
-  //   ["09:00", "09:20", "10:40", "11:00", "11:40", "14:40", "15:40", "16:00" , "16:40"]
-  //   loadAppointments()
-  // }, [selectedDateIso])
+  useEffect(() => {
+    if (!selectedDateIso || !selectedDoctorId) return;
+    setLoadingAppointments(true)
+    const dayOfDate = selectedDateIso.split("T")[0]
+    const loadAppointments = async () => {
+      try {
+        // const { data, errors } = await client.models.Appointment.list({ doctorId: selectedDoctorId, scheduledOn: { beginsWith: dayOfDate}, selectionSet: ["scheduledOn"]})
+        // if (errors) console.error(errors)
+        // else setAppointments(data.map(apt => apt.scheduledOn))
+        await setTimeout(() => {
+          setTakenTimes(["09:00", "09:20", "10:40", "11:00", "11:40", "14:40", "15:40", "16:00" , "16:40"])
+          setLoadingAppointments(false)
+        }, 700);
+      } catch (err) {
+        console.error("Failed to load appointments:", err)
+      } 
+      // finally {
+      //   setLoadingAppointments(false)
+      // }
+    }
+    loadAppointments()
+  }, [selectedDateIso])
 
   // compute available weekday keys from selected doctor's businessHours
   const availableWeekdays = useMemo(() => {
@@ -181,14 +193,6 @@ export function CreateAppointmentDialog() {
   }, [selectedDateIso])
 
 
-    const handleTimeChange = (value: string) => {
-    const minutes = parseInt(value.split(":")[1], 10)
-    // Only accept 00, 20, 40 minutes
-    if ([0, 20, 40].includes(minutes)) {
-      form.setValue("timeScheduled", value)
-    }
-  }
-
   const onNext = async () => {
     // validate partial steps
     if (step === 0) {
@@ -202,6 +206,7 @@ export function CreateAppointmentDialog() {
     } else if (step === 2) {
       const ok = await form.trigger("dateScheduled")
       if (!ok) return
+      if (!form.getValues("timeScheduled")) form.setValue("timeScheduled", "09:00")
       setStep(3)
     } else if (step === 3) {
       const ok = await form.trigger("timeScheduled")
@@ -217,17 +222,39 @@ export function CreateAppointmentDialog() {
   const onBack = () => setStep((s) => Math.max(0, s - 1))
 
   const onSubmit = async (values: AppointmentFormValues) => {
+    setSubmitting(true)
     try {
-      // Final validation handled by resolver; form.handleSubmit wraps this
-      // Here you would call your API to create the appointment
-      console.log("Creating appointment", values)
-      toast.success("Cita creada (simulada)")
-      setOpen(false)
-      form.reset()
-      setStep(0)
+      const { data, errors } = await client.models.Appointment.create(getPayload(values), {selectionSet: ["scheduledOn", "status", "doctor.name", "doctor.specialty"]})
+      if (errors) {
+        console.error("Error creating appointment:", errors)
+        toast.error("Error al crear al appointment", {
+          description: errors[0]["message"]
+        })
+      } else if (data) {
+        if (setAppointments) setAppointments!((prev) => [...prev, data])
+        setOpen(false)
+        toast.success("Cita creada con exito", {
+          description: values.doctorId + " ya puede ingresar al sistema."
+        })
+        form.reset()
+      }
     } catch (err) {
-      console.error(err)
-      toast.error("Error al crear la cita")
+      console.error("Create failed:", err)
+      toast.error("Algo salio mal...")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const getPayload = (values: AppointmentFormValues): Schema["Appointment"]["createType"] => {
+    return {
+      motive: values.motive,
+      type: values.type as any,
+      doctorId: values.doctorId,
+      patientId,
+      scheduledOn: new Date(
+        new Date(values.dateScheduled).toDateString() + " " + values.timeScheduled 
+      ).toISOString(),
     }
   }
 
@@ -262,7 +289,7 @@ export function CreateAppointmentDialog() {
                   name="specialty"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Especialidad (opcional)</FormLabel>
+                      <FormLabel>Especialidad</FormLabel>
                       <FormControl>
                         <Select
                           onValueChange={field.onChange}
@@ -418,7 +445,7 @@ export function CreateAppointmentDialog() {
                       <FormControl>
                         <Input
                           type="time"
-                          value={field.value || "09:00"}
+                          value={field.value}
                           onChange={(e) => {
                             const value = e.target.value
                             const minutes = parseInt(value.split(":")[1], 10)
@@ -445,19 +472,21 @@ export function CreateAppointmentDialog() {
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium text-muted-foreground">Horarios ocupados</h4>
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                    {appointments.length !== 0 ? appointments.map(
-                      (time) => (
-                        <Button
-                          key={time}
-                          variant="destructive"
-                          disabled
-                          className="w-full cursor-not-allowed opacity-70"
-                        >
-                          {time}
-                        </Button>
-                      )
-                    ) : 
-                    <p className="text-sm text-muted-foreground col-span-full">No hay horarios ocupados para esta fecha.</p>
+                    {loadingAppointments ? 
+                      <p className="text-sm text-muted-foreground col-span-full">Cargando horarios ocupados...</p> :
+                      takenTimes.length !== 0 ? takenTimes.map(
+                        (time) => (
+                          <Button
+                            key={time}
+                            variant="destructive"
+                            disabled
+                            className="w-full cursor-not-allowed opacity-70"
+                          >
+                            {time}
+                          </Button>
+                        )
+                      ) : 
+                      <p className="text-sm text-muted-foreground col-span-full">No hay horarios ocupados para esta fecha.</p>
                     }
                   </div>
                 </div>
@@ -469,32 +498,29 @@ export function CreateAppointmentDialog() {
               </div>
             )}
 
-            {/* STEP 4 - Specialty */}
+            {/* STEP 4 - Info */}
             {step === 4 && (
               <div className="space-y-3">
                 <FormField
                   control={form.control}
-                  name="specialty"
+                  name="type"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Especialidad (opcional)</FormLabel>
+                      <FormLabel>Tipo de consulta</FormLabel>
                       <FormControl>
                         <Select
                           onValueChange={field.onChange}
                           value={field.value || ""}
-                          disabled={!specialties.length}
                         >
                           <SelectTrigger>
                             <SelectValue
                               placeholder={
-                                specialties.length === 0
-                                  ? "Cargando especialidades..."
-                                  : "Selecciona una especialidad"
+                                "Seleccion una tipo"
                               }
                             />
                           </SelectTrigger>
                           <SelectContent>
-                            {specialties.map((s, index) => (
+                            {appointmentTypes.map((s, index) => (
                               <SelectItem key={index} value={s}>
                                 {s}
                               </SelectItem>
@@ -506,20 +532,42 @@ export function CreateAppointmentDialog() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="motive"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Motivo de cita</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ej: Dolor de cabeza" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             )}
 
             {/* STEP 5 - Summary */}
             {step === 5 && (
-              <div className="space-y-6">
+              <div className="space-y-3">
                 <h3 className="text-lg font-semibold">Resumen de la cita</h3>
                 <p className="text-sm text-muted-foreground">
                   Verifica que toda la información sea correcta antes de confirmar.
                 </p>
 
                 <div className="w-full rounded-lg border bg-muted/30 p-6 space-y-4">
+
                   <p className="text-base leading-relaxed">
-                    Estoy programando una cita con el doctor... <br/>
+                    Estoy programando una cita... <br/>
+                    <span className="font-semibold text-foreground">
+                      {form.getValues("type") || "—"}
+                    </span>
+                    .
+                  </p>
+
+                  <p className="text-base leading-relaxed">
+                    Con el doctor... <br/>
                     <span className="font-semibold text-foreground">
                       Dr. {selectedDoctor?.name || "—"}
                     </span>
@@ -550,6 +598,14 @@ export function CreateAppointmentDialog() {
                     A las... <br/>
                     <span className="font-semibold text-foreground">
                       {convertTo12Hour(form.getValues("timeScheduled"))}
+                    </span>
+                    .
+                  </p>
+
+                  <p className="text-base leading-relaxed">
+                    Por el motivo de... <br/>
+                    <span className="font-semibold text-foreground">
+                      {form.getValues("motive") || "(Sin Motivo)"}
                     </span>
                     .
                   </p>

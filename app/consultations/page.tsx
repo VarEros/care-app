@@ -330,7 +330,7 @@ export default function AppointmentsPage() {
                         name="reason"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Motivo</FormLabel>
+                            <FormLabel>Razón de consulta</FormLabel>
                             <FormControl>
                               <Input placeholder="Ej: Dolor de cabeza" {...field} />
                             </FormControl>
