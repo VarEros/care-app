@@ -41,7 +41,7 @@ export const recipeSchema = z.object({
   medication: z.string().min(1, "El medicamento es requerido"),
   dosage: z.coerce.number().min(1, "La dosis es requerida"),
   dosageFormat: z.enum(["mg", "ml", "pastilla", "gota", "tableta", "cápsula"]),
-  frequency: z.string().min(1, "La frecuencia es requerida"),
+  frequency: z.coerce.number().min(1, "La frecuencia es requerida"),
   frequencyType: z.enum(["Horas", "Dias", "Semanas"]),
   until: z    
     .string()
@@ -66,7 +66,7 @@ export function RecipesForm({ recipes, setRecipes }: RecipesFormProps) {
       medication: "",
       dosage: 1,
       dosageFormat: "mg",
-      frequency: "",
+      frequency: 1,
       frequencyType: "Dias",
       until: undefined,
       notes: "",
@@ -120,7 +120,7 @@ export function RecipesForm({ recipes, setRecipes }: RecipesFormProps) {
                     <FormItem>
                     <FormLabel>Dosis</FormLabel>
                     <FormControl>
-                        <Input type="number" min={1} {...field} />
+                        <Input type="number" {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -160,7 +160,7 @@ export function RecipesForm({ recipes, setRecipes }: RecipesFormProps) {
                     <FormItem>
                     <FormLabel>Frecuencia</FormLabel>
                     <FormControl>
-                        <Input placeholder="Ej: 8" {...field} />
+                        <Input type="number" {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>

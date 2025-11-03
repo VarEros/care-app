@@ -127,7 +127,7 @@ export default function DoctorsPage() {
       if (specialties.length !== 0) return
       loadSpecialties()
     }
-    if (selectedDoctor) {
+    if (!openDialog && selectedDoctor) {
       setTimeout(() => {
         setSelectedDoctor(null)
         form.reset(formDefaultValues)

@@ -28,7 +28,7 @@ const baseRecipe = {
   medication: a.string().required(),
   dosage: a.integer().required(),
   dosageFormat: dosageFormats,
-  frequency: a.string().required(),
+  frequency: a.integer().required(),
   frequencyType: frequencyTypes,
   until: a.datetime().required(),
   notes: a.string(),
@@ -61,18 +61,37 @@ export const schema = a.schema({
   Patient: a
     .model({
       cedula: a.string().required(),
-      email: a.email(),
+      email: a.email().required(),
       name: a.string().required(),
       birthdate: a.date().required(),
       gender: genders,
-      exames: a.string(),
+      exams: a.string(),
+      background: a.string(),
+      allergies: a.string().array(),
+      bloodType: a.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']),
       appointments: a.hasMany("Appointment", "patientId"), // relación con Appointment
       recipes: a.hasMany("Recipe", "patientId"), // relación con Recipe
     })
-    .secondaryIndexes((index) => [index("cedula")])
     .authorization((allow) => [
       allow.ownerDefinedIn("id").to(["read", "create", "update"]), // patient
       allow.group("Doctors").to(["read"])
+    ]),
+
+  Expedient: a
+    .model({
+      patientId: a.id().required(),
+      validatedOn: a.datetime().required(),
+      weight: a.integer(),
+      height: a.integer(),
+      temperature: a.integer(),
+      heartRate: a.integer(),
+      diastolicPressure: a.integer(),
+      systolicPressure: a.integer(),
+      patient: a.belongsTo("Patient", "patientId"),
+    })
+    .authorization((allow) => [
+      allow.ownerDefinedIn("patientId").to(["read"]), // patient
+      allow.group("Doctors").to(["read", "create"])
     ]),
 
   Appointment: a
@@ -109,7 +128,7 @@ export const schema = a.schema({
       allow.ownerDefinedIn("doctorId").to(["read", "create"]) // doctor
     ]),
 
-    Recipe: a
+  Recipe: a
     .model({
       consultationId: a.id().required(), // FK → Consultation
       patientId: a.id().required(), // FK → Patient

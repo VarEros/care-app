@@ -10,8 +10,9 @@ import Sidebar from "../components/sidebar"
 import { Toaster } from "@/components/ui/sonner"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
-import { Menu, Moon, Sun } from "lucide-react"
+import { Menu} from "lucide-react"
 import { ThemeProvider } from "@/components/theme-provider"
+import { formFields } from "./customAuth"
 
 Amplify.configure(outputs)
 
@@ -22,7 +23,7 @@ export default function RootLayout({
 }) {
   
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning>
       <body>
         <ThemeProvider
             attribute="class"
@@ -30,7 +31,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-        {/* <Authenticator>
+        {/* <Authenticator formFields={formFields}>
           {({ signOut, user }) => ( */}
             <>
               <Toaster />
@@ -84,7 +85,7 @@ export default function RootLayout({
               </div>
             </>
           {/* )}
-        </Authenticator> */}
+        </Authenticator>  */}
         </ThemeProvider>
       </body>
     </html>

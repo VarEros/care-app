@@ -86,7 +86,7 @@ export default function Sidebar() {
         { label: "Citas", href: "/appointments", icon: <Calendar className="h-4 w-4" /> },
         { label: "Mis Citas", href: "/my-appointments", icon: <Calendar className="h-4 w-4" /> },
         { label: "Consultas", href: "/consultations", icon: <Stethoscope className="h-4 w-4" /> },
-        { label: "Recetas", href: "/recipes", icon: <FileText className="h-4 w-4" /> },
+        { label: "Mis Recetas", href: "/my-recipes", icon: <FileText className="h-4 w-4" /> },
         { label: "Doctores", href: "/doctors", icon: <Users className="h-4 w-4" /> }
       )
     }
