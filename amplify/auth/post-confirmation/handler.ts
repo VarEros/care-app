@@ -21,7 +21,7 @@ const cognitoClient = new CognitoIdentityProviderClient({});
 export const handler: PostConfirmationTriggerHandler = async (event) => {
   await schemaClient.models.Patient.create({
       id: event.userName,
-      cedula: 'sx', // using sub as unique identifier
+      cedula: event.request.userAttributes.cedula, // using sub as unique identifier
       email: event.request.userAttributes.email,
       name: event.request.userAttributes.name,
       birthdate: event.request.userAttributes.birthdate,

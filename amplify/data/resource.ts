@@ -6,9 +6,9 @@ export const createDoctorWithUserHandler = defineFunction({
   entry: './createDoctorWithUser/handler.ts',
 })
 
-export const createConsultationWithRecipesHandler = defineFunction({
-  name: "create-consultation-with-recipes",
-  entry: "./createConsultationWithRecipes/handler.ts", 
+export const createCompleteConsultationHandler = defineFunction({
+  name: "create-complete-consultation",
+  entry: "./createCompleteConsultation/handler.ts", 
 });
 
 const dosageFormats = a.enum(["mg", "ml", "pastilla", "gota", "tableta", "cápsula"])
@@ -22,6 +22,16 @@ const baseDoctor = {
   birthdate: a.date().required(),
   gender: genders,
   specialty: a.string().required()
+}
+
+const baseBiometric = {
+  validatedOn: a.datetime().required(),
+  weight: a.integer(),
+  height: a.integer(),
+  temperature: a.integer(),
+  heartRate: a.integer(),
+  diastolicPressure: a.integer(),
+  systolicPressure: a.integer(),
 }
 
 const baseRecipe = {
@@ -40,8 +50,8 @@ const baseConsultation = {
   diagnosis: a.string().required(),
   treatment: a.string(),
   observations: a.string(),
-  startedAt: a.datetime(),
-  endedAt: a.datetime()
+  startedAt: a.datetime().required(),
+  endedAt: a.datetime().required()
 }
 
 export const schema = a.schema({
@@ -77,16 +87,10 @@ export const schema = a.schema({
       allow.group("Doctors").to(["read"])
     ]),
 
-  Expedient: a
+  Biometric: a
     .model({
       patientId: a.id().required(),
-      validatedOn: a.datetime().required(),
-      weight: a.integer(),
-      height: a.integer(),
-      temperature: a.integer(),
-      heartRate: a.integer(),
-      diastolicPressure: a.integer(),
-      systolicPressure: a.integer(),
+      ...baseBiometric,
       patient: a.belongsTo("Patient", "patientId"),
     })
     .authorization((allow) => [
@@ -153,18 +157,20 @@ export const schema = a.schema({
 
     BaseRecipe: a.customType(baseRecipe),
     BaseConsultation: a.customType(baseConsultation),
+    baseBiometric: a.customType(baseBiometric),
     
-    createConsultationWithRecipes: a
+    createCompleteConsultation: a
       .mutation()
       .arguments({
         consultation: a.ref("BaseConsultation").required(),
-        recipes: a.ref("BaseRecipe").array().required(),
+        recipes: a.ref("BaseRecipe").array(),
+        biometric: a.ref("baseBiometric"),
       })
       .returns(a.ref("Appointment")) // return the created consultation
       .authorization((allow) => [
         allow.group("Doctors"),
       ])
-      .handler(a.handler.function(createConsultationWithRecipesHandler)),
+      .handler(a.handler.function(createCompleteConsultationHandler)),
 
     Catalog: a.model ({
       type: a.string().required(),
@@ -174,8 +180,11 @@ export const schema = a.schema({
     })
     .identifier(["type", "createdAt"])
 })
-.authorization((allow) => [allow.resource(postConfirmation),
-  allow.resource(createDoctorWithUserHandler)]);
+.authorization((allow) => [
+  allow.resource(postConfirmation),
+  allow.resource(createDoctorWithUserHandler),
+  allow.resource(createCompleteConsultationHandler),
+]);
 
 export type Schema = ClientSchema<typeof schema>;
 

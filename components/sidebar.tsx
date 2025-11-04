@@ -116,9 +116,7 @@ export default function Sidebar() {
       {/* Header */}
       <div className="px-4 py-5 flex items-center gap-3 border-b">
         <Circle className="h-10 w-10">
-          {/* <div className="flex h-full w-full items-center justify-center rounded-full bg-blue-600 text-white">
-            DR
-          </div> */}
+
         </Circle>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold truncate">Dr. Juan Pérez</p>

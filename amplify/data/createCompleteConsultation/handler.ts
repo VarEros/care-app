@@ -3,7 +3,7 @@ import type { Schema } from "../resource";
 import { generateClient } from 'aws-amplify/data';
 
 const schemaClient = generateClient<Schema>();
-type Handler = Schema["createConsultationWithRecipes"]["functionHandler"]
+type Handler = Schema["createCompleteConsultation"]["functionHandler"]
 
 export const handler: Handler = async (event) => {
     const {

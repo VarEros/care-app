@@ -54,6 +54,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { RecipeFormValues, RecipesForm } from "./components/recipesForm"
 import { fetchAuthSession } from "aws-amplify/auth"
+import BiometricDrawer from "./components/biometricDrawer"
+import { Biometric } from "./type"
 
 const consultationSchema = z.object({
   reason: z.string().nonempty("La razon de la cita es requerida"),
@@ -89,8 +91,10 @@ export default function AppointmentsPage() {
   const [approvedAppointments, setApprovedAppointments] = useState<Array<ApprovedAppointment>>([])
   const [appointment, setAppointment] = useState<ApprovedAppointment | null>(null)
   const [recipes, setRecipes] = useState<RecipeFormValues[]>([])
+  const [biometric, setBiometric] = useState<Biometric | null>(null)
 
   const [openDialog, setOpenDialog] = useState(false)
+  const [openDrawer, setOpenDrawer] = useState(false)
   const [openForm, setOpenForm] = useState(false)
   const [openAppointments, setOpenAppointments] = useState(false)
 
@@ -98,6 +102,7 @@ export default function AppointmentsPage() {
   const [submitting, setSubmitting] = useState(false)
 
   let doctorId: string;
+  const now = new Date();
 
   // Setup form
   const form = useForm<ConsultationFormValues>({
@@ -107,7 +112,7 @@ export default function AppointmentsPage() {
       diagnosis: "",
       treatment: "",
       observations: "",
-      startedAt: "",
+      startedAt: new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16),
       endedAt: "",
     },
   });
@@ -202,12 +207,29 @@ export default function AppointmentsPage() {
   const onSubmit = async (values: ConsultationFormValues) => {
     setSubmitting(true)
     try {
-      const payload = {
+      const consultation: Schema["Consultation"]["createType"] = {
         ...values,
         doctorId: doctorId,
+        endedAt: values.endedAt ?? new Date().toISOString(),
         appointmentScheduledOn: appointment?.scheduledOn!,
       }
-      const { data, errors } = await client.mutations.createConsultationWithRecipes({consultation: payload, recipes: recipes})
+      
+      let payload: Schema["createCompleteConsultation"]["args"] = {consultation}
+
+      if (recipes && recipes.length !== 0) {
+        payload.recipes = recipes
+      }
+
+      if (biometric) {
+        const biometricPayload: Schema["Biometric"]["createType"] = {
+          ...biometric,
+          patientId: appointment!.patientId,
+          validatedOn: consultation.startedAt
+        }
+        payload.biometric = biometricPayload
+      }
+      
+      const { data, errors } = await client.mutations.createCompleteConsultation(payload)
       
       if (errors) {
         console.error("Error creating appointment:", errors)
@@ -248,7 +270,8 @@ export default function AppointmentsPage() {
         <h1 className="text-xl font-bold">Consultas</h1>
 
         {/* Dialog for adding new Cita */}
-        <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+        <Dialog open={openDialog} onOpenChange={setOpenDialog} >
+        <BiometricDrawer open={openDrawer} onOpenChange={setOpenDrawer} setBiometric={setBiometric}/>
           <DialogTrigger asChild>
             <Button className="w-[200px]">Realizar Consulta</Button>
           </DialogTrigger>
@@ -416,8 +439,19 @@ export default function AppointmentsPage() {
                     </div>
                     <RecipesForm recipes={recipes} setRecipes={setRecipes} />
                   </div>
+                  <DialogFooter className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    {/* Left side buttons */}
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button variant="outline" type="button">
+                        Revisar expediente
+                      </Button>
+                      <Button variant="outline" type="button" onClick={() => setOpenDrawer(true)}>
+                        {biometric ? "Editar Datos Biometricos" : "Añadir Datos Biometricos"}
+                      </Button>
+                    </div>
 
-                    <DialogFooter>
+                    {/* Right side buttons (existing) */}
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <Button
                         variant="secondary"
                         className="mt-4 sm:mt-0"
@@ -436,7 +470,8 @@ export default function AppointmentsPage() {
                           "Guardar Consulta"
                         )}
                       </Button>
-                    </DialogFooter>
+                    </div>
+                  </DialogFooter>
                 </form>
               </Form>
             )}
