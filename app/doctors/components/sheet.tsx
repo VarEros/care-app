@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Sheet,
   SheetContent,
@@ -14,16 +14,13 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
+import { client } from "@/lib/amplifyClient"
+import { toast } from "sonner"
+import { BusinessHoursData, BusinessHoursForm, DoctorSchema } from "../types"
+import { dataToForm } from "../helpers/businessHours"
+import { dayLabels } from "@/lib/constants"
 
-type BusinessHours = {
-  [key: string]: {
-    enabled: boolean
-    start: string
-    end: string
-  }
-}
-
-const defaultHours: BusinessHours = {
+const defaultHours: BusinessHoursForm = {
   monday: { enabled: true, start: "09:00", end: "17:00" },
   tuesday: { enabled: true, start: "09:00", end: "17:00" },
   wednesday: { enabled: true, start: "09:00", end: "17:00" },
@@ -36,13 +33,13 @@ const defaultHours: BusinessHours = {
 export function DoctorScheduleSheet({
   openSheet,
   setOpenSheet,
-  doctorName = "Juan Pérez",
+  doctor
 }: {
   openSheet: boolean
   setOpenSheet: (open: boolean) => void
-  doctorName?: string
+  doctor: DoctorSchema
 }) {
-  const [hours, setHours] = useState<BusinessHours>(defaultHours)
+  const [hours, setHours] = useState<BusinessHoursForm>(defaultHours)
   const [saving, setSaving] = useState(false)
 
   const handleToggleDay = (day: string) => {
@@ -53,41 +50,51 @@ export function DoctorScheduleSheet({
   }
 
   const handleTimeChange = (day: string, field: "start" | "end", value: string) => {
-    setHours((prev) => ({
-      ...prev,
-      [day]: { ...prev[day], [field]: value },
-    }))
+    const minutes = parseInt(value.split(":")[1], 10)
+    // Only accept 00, 20, 40 minutes
+    if ([0, 20, 40].includes(minutes)) {
+      setHours((prev) => ({
+        ...prev,
+        [day]: { ...prev[day], [field]: value },
+      }))
+    }
   }
 
   const handleSave = async () => {
     setSaving(true)
     try {
-      // Simulate API save
-      console.log("Saving hours:", hours)
-      // await api.updateDoctorSchedule(doctorId, hours)
+        const { data, errors } = await client.models.Doctor.update({id: doctor.id, businessHours: JSON.stringify(hours)});
+      if (errors) {
+        console.error("Error creating updating:", errors)
+        toast.error("Error al guardar horario de atencion", {
+          description: errors[0]["message"]
+        })
+      } else if (data) {
+        setOpenSheet(false)
+        toast.success("Horario de atención guardado con exito", {
+          description: "Se ha actualizado el horario del Dr. " + doctor.name
+        })
+      }
+    } catch (err) {
+      console.error("Create failed:", err)
+      toast.error("Algo salio mal...")
     } finally {
       setSaving(false)
-      setOpenSheet(false)
     }
   }
 
-  const dayLabels: Record<string, string> = {
-    monday: "Lunes",
-    tuesday: "Martes",
-    wednesday: "Miércoles",
-    thursday: "Jueves",
-    friday: "Viernes",
-    saturday: "Sábado",
-    sunday: "Domingo",
-  }
-
+  useEffect(() => {
+    if(!doctor || !doctor.businessHours) return;
+    setHours(dataToForm(doctor.businessHours as BusinessHoursData))
+  }, [doctor])
+  
   return (
     <Sheet open={openSheet} onOpenChange={setOpenSheet}>
       <SheetContent className="flex flex-col space-y-4">
         <SheetHeader>
           <SheetTitle>Horario de atención</SheetTitle>
           <SheetDescription>
-            Define los horarios de atención para el Dr. {doctorName}
+            Define los horarios de atención correspondiente al Dr. {doctor.name}, los pacientes podran agendar sus citas en el horario asignado.
           </SheetDescription>
         </SheetHeader>
 
@@ -111,7 +118,16 @@ export function DoctorScheduleSheet({
                   <Input
                     type="time"
                     value={end}
-                    onChange={(e) => handleTimeChange(day, "end", e.target.value)}
+                      onChange={(e) => {
+                        const value = e.target.value
+                        const minutes = parseInt(value.split(":")[1], 10)
+                        // Only accept 00, 20, 40 minutes
+                        if ([0, 20, 40].includes(minutes)) {
+                          handleTimeChange(day, "end", value)
+                        }
+                      }}
+                    step={1200} // 20 minutes = 1200 seconds
+                    
                     disabled={!enabled}
                     className="w-28"
                   />

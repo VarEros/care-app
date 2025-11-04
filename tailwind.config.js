@@ -6,6 +6,13 @@ module.exports = {
         './components/**/*.{js,ts,jsx,tsx,mdx}'
 	],
   theme: {
+	screens: {
+		'xs': '480px', // Define your custom xs breakpoint
+		'sm': '640px',
+		'md': '768px',
+		'lg': '1024px',
+		'xl': '1280px',
+	},
   	extend: {
   		borderRadius: {
   			lg: 'var(--radius)',
@@ -46,6 +53,7 @@ module.exports = {
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',
+  			disabled: 'hsl(var(--disabled))',
   			chart: {
   				'1': 'hsl(var(--chart-1))',
   				'2': 'hsl(var(--chart-2))',

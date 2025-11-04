@@ -6,9 +6,10 @@ import type { Schema } from "@/amplify/data/resource"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Check, ChevronsUpDown, Loader2 } from "lucide-react"
+import { CalendarIcon, Check, ChevronsUpDown, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Nullable } from "@aws-amplify/data-schema"
+import { es } from "date-fns/locale"
 
 // shadcn/ui components
 import {
@@ -31,6 +32,7 @@ import {
 } from "@/components/ui/form"
 import {
   Item,
+  ItemActions,
   ItemContent,
   ItemDescription,
   ItemTitle,
@@ -58,18 +60,18 @@ const appointmentSchema = z.object({
     .string()
     .nonempty("La fecha de nacimiento requerida")
     .refine((val) => !isNaN(Date.parse(val)), "La fecha es invalida"),
-  type: z.enum(["Masculino", "Femenino", "Otro"], {
-    required_error: "El genero es requerido",
+  type: z.enum(["Primaria", "Preventiva"], {
+    required_error: "El tipo es requerido",
   }),
 })
 
 type AppointmentFormValues = z.infer<typeof appointmentSchema>
 type Appointment = {
-    readonly scheduledOn: string;
-    readonly doctor: {
-        readonly name: string;
-        readonly specialty: Nullable<string>;
-    };
+  readonly scheduledOn: string;
+  readonly patient: {
+    readonly name: string;
+    readonly cedula: Nullable<string>;
+  }
 }
 
 export default function AppointmentsPage() {
@@ -77,12 +79,12 @@ export default function AppointmentsPage() {
   const [doctors, setDoctors] = useState<Array<Schema["Doctor"]["updateType"]>>([])
   const [specialties, setSpecialties] = useState<string[]>([])
   const [specialty, setSpecialty] = useState<string>("")
-  const [date, setDate] = useState<Date | undefined>(new Date())
 
   const [openDialog, setOpenDialog] = useState(false)
   const [openSpecialties, setOpenSpecialties] = useState(false)
+  const [openCalendar, setOpenCalendar] = useState(false)
   const [openDoctors, setOpenDoctors] = useState(false)
-  
+
   const [loading, setLoading] = useState(true)
   const [loadingDoctors, setLoadingDoctors] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -98,11 +100,20 @@ export default function AppointmentsPage() {
     },
   })
 
+  // Helper to check if the selected date’s weekday is available
+  let businessHours: object;
+  const isOpenDay = (date: Date) => {
+    const weekday = date
+      .toLocaleString("en-ES", { weekday: "long" })
+      .toLowerCase()
+    return Object.keys(businessHours).includes(weekday)
+  }
+
   // Load doctors on mount
   useEffect(() => {
     const loadAppointments = async () => {
       try {
-        // const { data, errors } = await client.models.Appointment.list({filter: {patientId: {eq: "1"}}, selectionSet: ["scheduledOn", "doctor.name", "doctor.specialty"]})
+        // const { data, errors } = await client.models.Appointment.list({ doctorId: "1", selectionSet: ["scheduledOn", "patient.name", "patient.cedula"] })
         setTimeout(() => {
           const specialties = [
             "Cardiologia",
@@ -112,22 +123,22 @@ export default function AppointmentsPage() {
           const appointments = [
             {
               scheduledOn: "20 de Octubre, 2025 - 8:30PM",
-              doctor: {
+              patient: {
                 name: "Mario Lopez",
-                specialty: "Neurocirugia"
+                cedula: "001-240504-1023S"
               }
             },
             {
               scheduledOn: "25 de Octubre, 2025 - 2:30PM",
-              doctor: {
+              patient: {
                 name: "Maria Gutierrez",
-                specialty: "Cardiologia"
+                cedula: "001-240504-1023S"
               }
             }
           ]
           setAppointments(appointments)
           setLoading(false)
-        }, 2000);
+        }, 500);
         // if (errors) console.error(errors)
         // else setAppointments(data)
       } catch (err) {
@@ -139,42 +150,6 @@ export default function AppointmentsPage() {
 
     loadAppointments()
   }, [])
-  
-  // Load doctors on mount
-  useEffect(() => {
-    if (!specialty) return
-    setLoadingDoctors(true)
-    const loadDoctors = async () => {
-      try {
-        // const { data, errors } = await client.models.Doctor.list({filter: {status: {eq: "Activo"}, specialty: {eq: specialty ?? undefined}}, selectionSet: ["id", "name"]})
-        setTimeout(() => {
-          const doctors = [
-            {
-              id: "1",
-              name: "Juan Perez",
-              email: "juanperez@gmail.com",
-              specialty: "Neurologia"
-            },
-            {
-              id: "2",
-              name: "Juan Bolivar",
-              email: "juanbolivar@gmail.com"
-            }
-          ];
-          setDoctors(doctors)
-          setLoadingDoctors(false)
-        }, 1000)
-        // if (errors) console.error(errors)
-        // else setDoctors(data)
-      } catch (err) {
-        console.error("Failed to load appointments:", err)
-      } finally {
-        // setLoadingDoctors(false)
-      }
-    }
-
-    loadDoctors()
-  }, [specialty])
 
   // Handle appointment creation
   const onSubmit = async (values: AppointmentFormValues) => {
@@ -201,17 +176,21 @@ export default function AppointmentsPage() {
       setSubmitting(false)
     }
   }
-  
+
   if (loading)
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <span className="ml-2 text-blue-600">Cargando citas...</span>
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Cargando citas...</span>
       </div>
     )
 
+  const handleRevise = (apt: Appointment)=> {
+    
+  }
+
   return (
-    <div className="p-6">
+    <div className="sm:p-6">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-bold">Citas</h1>
 
@@ -228,51 +207,54 @@ export default function AppointmentsPage() {
                 Llena el formulario para registrar su cita, espere hasta que el doctor revise y valide su cita para considerarla agendada.
               </DialogDescription>
             </DialogHeader>
-            <Popover open={openSpecialties} onOpenChange={setOpenSpecialties}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={openSpecialties}
-                  className="justify-between"
-                >
-                  {specialty || "Selecciona un especialidad..."}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="p-0">
-                <Command>
-                  <CommandInput placeholder="Busca especialidad..." className="h-9" />
-                  <CommandList>
-                    <CommandEmpty>Especialidad no encontrada</CommandEmpty>
-                    <CommandGroup>
-                      {specialties.map((s, index) => (
-                        <CommandItem
-                          key={index}
-                          value={s}
-                          onSelect={(currentValue) => {
-                            setSpecialty(currentValue)
-                            setOpenSpecialties(false)
-                          }}
-                        >
-                          {s}
-                          <Check
-                            className={cn(
-                              "ml-auto",
-                              specialty === s ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+            {!specialty && (
+              <Popover open={openSpecialties} onOpenChange={setOpenSpecialties}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openSpecialties}
+                    className="justify-between"
+                  >
+                    {specialty || "Selecciona un especialidad..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="p-0">
+                  <Command>
+                    <CommandInput placeholder="Busca especialidad..." className="h-9" />
+                    <CommandList>
+                      <CommandEmpty>Especialidad no encontrada</CommandEmpty>
+                      <CommandGroup>
+                        {specialties.map((s, index) => (
+                          <CommandItem
+                            key={index}
+                            value={s}
+                            onSelect={(currentValue) => {
+                              setSpecialty(currentValue)
+                              setOpenSpecialties(false)
+                            }}
+                          >
+                            {s}
+                            <Check
+                              className={cn(
+                                "ml-auto",
+                                specialty === s ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            )}
             {specialty && (
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  {/* Name */}
+
+                  {/* Seleccionar doctor */}
                   <FormField
                     control={form.control}
                     name="doctorId"
@@ -282,11 +264,6 @@ export default function AppointmentsPage() {
                         <FormControl>
                           <Popover open={openDoctors} onOpenChange={setOpenDoctors}>
                             <PopoverTrigger asChild>
-                              {loadingDoctors ? (
-                                <Button variant="outline" disabled className="justify-between">
-                                  Cargando Doctores...
-                                </Button>
-                              ) : (
                                 <Button
                                   variant="outline"
                                   role="combobox"
@@ -298,7 +275,6 @@ export default function AppointmentsPage() {
                                     : "Selecciona un doctor..."}
                                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
-                              )}
                             </PopoverTrigger>
                             <PopoverContent className="p-0">
                               <Command>
@@ -312,6 +288,11 @@ export default function AppointmentsPage() {
                                         value={d.id}
                                         onSelect={(currentValue) => {
                                           field.onChange(currentValue)
+                                          businessHours = doctors.find((d) => d.id === field.value)?.businessHours as object ?? {}
+                                          if (field.value === currentValue) {
+                                            form.setValue("dateScheduled", "")
+                                            form.setValue("timeScheduled", "")
+                                          }
                                           setOpenDoctors(false)
                                         }}
                                       >
@@ -334,13 +315,52 @@ export default function AppointmentsPage() {
                       </FormItem>
                     )}
                   />
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={setDate}
-                    disabled={(day) => day < new Date(new Date().setHours(0, 0, 0, 0))}
-                    className="rounded-lg border"
+
+                  {/* Date of Schedule */}
+                  <FormField
+                    control={form.control}
+                    name="dateScheduled"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Fecha de Cita</FormLabel>
+                        <FormControl>
+                          <Popover open={openCalendar} onOpenChange={setOpenCalendar}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className="justify-between w-full"
+                              >
+                                {field.value
+                                  ? new Date(field.value).toLocaleDateString("es-ES", {
+                                    weekday: "long",
+                                    day: "numeric",
+                                    month: "long",
+                                    year: "numeric",
+                                  })
+                                  : "Seleccionar fecha..."}
+                                <CalendarIcon className="ml-2 h-4 w-4 opacity-50" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                locale={es} // 🇪🇸 calendar in Spanish
+                                selected={field.value ? new Date(field.value) : undefined}
+                                captionLayout="dropdown"
+                                onSelect={(date) => {
+                                  field.onChange(date?.toISOString() || "")
+                                  setOpenCalendar(false)
+                                }}
+                                disabled={(date) => !isOpenDay(date)} // disable non-working days
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
+
 
                   <DialogFooter>
                     <Button type="submit" className="w-full" disabled={submitting}>
@@ -369,14 +389,19 @@ export default function AppointmentsPage() {
           {appointments.map((apt) => (
             <Item variant="outline" key={apt.scheduledOn}>
               <ItemContent>
-                <ItemTitle className="line-clamp-1">
-                  Cita con {apt.doctor.name}{" "}
-                  <span className="text-muted-foreground">especialista en {apt.doctor.specialty ?? "Medicina General"}</span>
+                <ItemTitle>
+                  Cita con {apt.patient.name}
+                  <span className="text-muted-foreground hidden sm:block"> {apt.patient.cedula}</span>
                 </ItemTitle>
                 <ItemDescription>
                   Agendada para {apt.scheduledOn}
                 </ItemDescription>
               </ItemContent>
+              <ItemActions>
+                <Button onClick={() => handleRevise(apt)} variant="secondary" size="sm">
+                  Revisar
+                </Button>
+              </ItemActions>
             </Item>
           ))}
         </ul>
