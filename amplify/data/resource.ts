@@ -25,6 +25,7 @@ const baseDoctor = {
 }
 
 const baseBiometric = {
+  patientId: a.id().required(),
   validatedOn: a.datetime().required(),
   weight: a.integer(),
   height: a.integer(),
@@ -89,7 +90,6 @@ export const schema = a.schema({
 
   Biometric: a
     .model({
-      patientId: a.id().required(),
       ...baseBiometric,
       patient: a.belongsTo("Patient", "patientId"),
     })

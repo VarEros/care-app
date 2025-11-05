@@ -56,6 +56,8 @@ import { RecipeFormValues, RecipesForm } from "./components/recipesForm"
 import { fetchAuthSession } from "aws-amplify/auth"
 import BiometricDrawer from "./components/biometricDrawer"
 import { Biometric } from "./type"
+import { PatientSheet } from "@/components/patientSheet"
+import { PatientRecord } from "@/lib/types"
 
 const consultationSchema = z.object({
   reason: z.string().nonempty("La razon de la cita es requerida"),
@@ -92,16 +94,18 @@ export default function AppointmentsPage() {
   const [appointment, setAppointment] = useState<ApprovedAppointment | null>(null)
   const [recipes, setRecipes] = useState<RecipeFormValues[]>([])
   const [biometric, setBiometric] = useState<Biometric | null>(null)
+  const [patient, setPatient] = useState<PatientRecord | null>(null)
 
   const [openDialog, setOpenDialog] = useState(false)
-  const [openDrawer, setOpenDrawer] = useState(false)
+  const [openBiometric, setOpenBiometric] = useState(false)
+  const [openExpedient, setOpenExpedient] = useState(false)
   const [openForm, setOpenForm] = useState(false)
   const [openAppointments, setOpenAppointments] = useState(false)
 
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
-  let doctorId: string;
+  let doctorId: string = "";
   const now = new Date();
 
   // Setup form
@@ -121,9 +125,9 @@ export default function AppointmentsPage() {
   useEffect(() => {
     const loadAppointments = async () => {
       try {
-        const { tokens }= await fetchAuthSession();
-        const sub = tokens?.idToken?.payload["sub"] as string;
-        doctorId = sub; 
+        // const { tokens }= await fetchAuthSession();
+        // const sub = tokens?.idToken?.payload["sub"] as string;
+        // doctorId = sub; 
 
         // if (!sub) {
         //   setLoading(false);
@@ -199,9 +203,36 @@ export default function AppointmentsPage() {
         ]
         setApprovedAppointments(appointments)
       }, 2000);
+      // const { data, errors } = await client.models.Appointment.list({ filter: { status: { eq: "Aprobada"}}, selectionSet: ["patientId", "scheduledOn", "patient.name", "patient.cedula"]})
+      // if (errors) console.error(errors)
+      // else setApprovedAppointments(data)
     }
     loadAprovedAppointments()
   }, [openDialog])
+
+  useEffect(() => {
+    if (!appointment) return
+    const loadExpedient = async() => {
+      // const { data, errors } = await client.models.Patient.get({id: appointment!.patientId}, {selectionSet: ["email", "birthdate", "gender", "bloodType", "background", "allergies"]})
+      // if (errors) console.error(errors)
+      // else setPatient({...data!, name: appointment!.patient.name, cedula: appointment!.patient.cedula, id: appointment!.patientId})
+      setTimeout(() => {
+        setPatient({
+    id: "1a2b3c4d",
+    name: "María López",
+    email: "maria.lopez@example.com",
+    birthdate: "1990-05-14",
+    gender: "Femenino",
+    cedula: "1234567890",
+    background: "Hipertensión controlada con medicación.",
+    allergies: ["Penicilina"],
+    bloodType: "A+",
+  },)
+      }, 500);
+    }
+    loadExpedient()
+  }, [appointment])
+  
 
   // Handle appointment creation
   const onSubmit = async (values: ConsultationFormValues) => {
@@ -271,7 +302,8 @@ export default function AppointmentsPage() {
 
         {/* Dialog for adding new Cita */}
         <Dialog open={openDialog} onOpenChange={setOpenDialog} >
-        <BiometricDrawer open={openDrawer} onOpenChange={setOpenDrawer} setBiometric={setBiometric}/>
+        <BiometricDrawer open={openBiometric} onOpenChange={setOpenBiometric} setBiometric={setBiometric}/>
+        <PatientSheet open={openExpedient} setOpen={setOpenExpedient} patient={patient}/>
           <DialogTrigger asChild>
             <Button className="w-[200px]">Realizar Consulta</Button>
           </DialogTrigger>
@@ -442,10 +474,10 @@ export default function AppointmentsPage() {
                   <DialogFooter className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     {/* Left side buttons */}
                     <div className="flex flex-col sm:flex-row gap-2">
-                      <Button variant="outline" type="button">
+                      <Button variant="outline" type="button" onClick={() => setOpenExpedient(true)}>
                         Revisar expediente
                       </Button>
-                      <Button variant="outline" type="button" onClick={() => setOpenDrawer(true)}>
+                      <Button variant="outline" type="button" onClick={() => setOpenBiometric(true)}>
                         {biometric ? "Editar Datos Biometricos" : "Añadir Datos Biometricos"}
                       </Button>
                     </div>

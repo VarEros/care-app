@@ -4,12 +4,13 @@ import React, { useEffect, useState } from "react"
 import { Loader2, Eye } from "lucide-react"
 import { client } from "@/lib/amplifyClient"
 
-import { Nullable } from "@aws-amplify/data-schema"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
+import { PatientRecord } from "@/lib/types"
+import { PatientSheet } from "@/components/patientSheet"
+import { Item, ItemActions, ItemContent, ItemDescription, ItemTitle } from "@/components/ui/item"
 
 /**
  * PatientsView
@@ -20,22 +21,69 @@ import { Badge } from "@/components/ui/badge"
  * Adjust selectionSet to your API model if necessary.
  */
 
-type PatientRecord = {
-    readonly name: string;
-    readonly email: string;
-    readonly birthdate: string;
-    readonly gender: "Masculino" | "Femenino" | "Otro" | null;
-    readonly id: string;
-    readonly cedula: string;
-    readonly background: Nullable<string>;
-    readonly allergies: Nullable<string>[] | null;
-    readonly bloodType: "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-" | null;
-}
+const patientsSample: PatientRecord[] = [
+  {
+    id: "1a2b3c4d",
+    name: "María López",
+    email: "maria.lopez@example.com",
+    birthdate: "1990-05-14",
+    gender: "Femenino",
+    cedula: "1234567890",
+    background: "Hipertensión controlada con medicación.",
+    allergies: ["Penicilina"],
+    bloodType: "A+",
+  },
+  {
+    id: "2b3c4d5e",
+    name: "Carlos Hernández",
+    email: "carlos.hernandez@example.com",
+    birthdate: "1985-11-22",
+    gender: "Masculino",
+    cedula: "0987654321",
+    background: "Historial de asma leve en la infancia.",
+    allergies: null,
+    bloodType: "O-",
+  },
+  {
+    id: "3c4d5e6f",
+    name: "Ana Torres",
+    email: "ana.torres@example.com",
+    birthdate: "2001-02-09",
+    gender: "Femenino",
+    cedula: "1122334455",
+    background: null,
+    allergies: ["Mariscos", "Polvo"],
+    bloodType: "B+",
+  },
+  {
+    id: "4d5e6f7g",
+    name: "Jorge Ramírez",
+    email: "jorge.ramirez@example.com",
+    birthdate: "1978-09-30",
+    gender: "Masculino",
+    cedula: "5566778899",
+    background: "Diabético tipo II desde 2015.",
+    allergies: [],
+    bloodType: "AB-",
+  },
+  {
+    id: "5e6f7g8h",
+    name: "Patricia Gómez",
+    email: "patricia.gomez@example.com",
+    birthdate: "1995-03-18",
+    gender: "Otro",
+    cedula: "6677889900",
+    background: "Sin antecedentes relevantes.",
+    allergies: null,
+    bloodType: null,
+  },
+]
 
-export default function PatientsView() {
+
+export default function PatientsPage() {
   const [patients, setPatients] = useState<PatientRecord[]>([])
   const [loading, setLoading] = useState(true)
-  const [active, setActive] = useState<PatientRecord | null>(null)
+  const [patient, setPatient] = useState<PatientRecord | null>(null)
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
@@ -43,14 +91,13 @@ export default function PatientsView() {
     const load = async () => {
       setLoading(true)
       try {
-        const { data, errors } = await client.models.Patient.list({ selectionSet: ["id", "name", "cedula", "email", "birthdate", "gender", "bloodType", "background", "allergies"] })
-        if (!alive) return
-        if (errors) {
-          console.error("Failed to load patients:", errors)
-          setPatients([])
-        } else {
-          setPatients(data ?? [])
-        }
+        await setTimeout(() => {
+          setPatients(patientsSample)
+        }, 500);
+        // const { data, errors } = await client.models.Patient.list({ selectionSet: ["id", "name", "cedula", "email", "birthdate", "gender", "bloodType", "background", "allergies"] })
+        // if (!alive) return
+        // if (errors) console.error(errors)
+        // else setPatients(data ?? [])
       } catch (err) {
         console.error("Failed to load patients:", err)
         setPatients([])
@@ -65,7 +112,7 @@ export default function PatientsView() {
   }, [])
 
   const openRecord = (p: PatientRecord) => {
-    setActive(p)
+    setPatient(p)
     setOpen(true)
   }
 
@@ -90,96 +137,32 @@ export default function PatientsView() {
       ) : (
         <ul className="space-y-3">
           {patients.map((p) => (
-            <li key={p.id} className="border rounded-lg bg-card">
-              <div className="flex items-center justify-between p-4 gap-4">
-                <div className="flex items-center gap-4 min-w-0">
+            <Item key={p.id} variant="outline" className="bg-card">
+              <ItemContent>
+                <ItemTitle className="truncate">{p.name}</ItemTitle>
+                <ItemDescription className="flex items-center gap-2 text-sm text-muted-foreground truncate">
+                  <span className="truncate">{p.cedula ?? "—"}</span>
+                  <Separator orientation="vertical" className="mx-2 h-4" />
+                  <span className="truncate">{p.email ?? "—"}</span>
+                </ItemDescription>
+              </ItemContent>
 
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">{p.name}</p>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground truncate">
-                      <span className="truncate">{p.cedula ?? "—"}</span>
-                      <Separator orientation="vertical" className="mx-2 h-4" />
-                      <span className="truncate">{p.email ?? "—"}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {p.bloodType && <Badge variant="secondary">{p.bloodType}</Badge>}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openRecord(p)}
-                    className="flex items-center gap-2"
-                  >
-                    <Eye className="h-4 w-4" />
-                    Revisar expediente
-                  </Button>
-                </div>
-              </div>
-            </li>
+              <ItemActions>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openRecord(p)}
+                  className="flex items-center gap-2"
+                >
+                  <Eye className="h-4 w-4" />
+                  Revisar expediente
+                </Button>
+              </ItemActions>
+            </Item>
           ))}
         </ul>
       )}
-
-      {/* Read-only dialog for patient details */}
-      <Dialog open={open} onOpenChange={(v) => { if (!v) setActive(null); setOpen(v) }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Expediente del paciente</DialogTitle>
-          </DialogHeader>
-
-          {active ? (
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl">
-                  {active.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
-                </div>
-                <div>
-                  <p className="text-lg font-medium">{active.name}</p>
-                  <p className="text-sm text-muted-foreground">{active.email ?? "—"}</p>
-                  <p className="text-sm text-muted-foreground">Cédula: {active.cedula ?? "—"}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <p className="text-xs text-muted-foreground">Fecha de nacimiento</p>
-                  <p className="font-medium">{active.birthdate ? new Date(active.birthdate).toLocaleDateString("es-ES") : "—"}</p>
-                </div>
-
-                <div>
-                  <p className="text-xs text-muted-foreground">Género</p>
-                  <p className="font-medium">{active.gender ?? "—"}</p>
-                </div>
-
-                <div>
-                  <p className="text-xs text-muted-foreground">Tipo de sangre</p>
-                  <p className="font-medium">{active.bloodType ?? "—"}</p>
-                </div>
-
-                <div>
-                  <p className="text-xs text-muted-foreground">Alergias</p>
-                  <p className="font-medium">{active.allergies && active.allergies.length ? active.allergies.join(", ") : "—"}</p>
-                </div>
-              </div>
-
-              <div>
-                <p className="text-xs text-muted-foreground">Antecedentes</p>
-                <p className="whitespace-pre-line">{active.background ?? "—"}</p>
-              </div>
-
-              <div className="pt-2 text-right">
-                <Button variant="ghost" onClick={() => setOpen(false)}>Cerrar</Button>
-              </div>
-            </div>
-          ) : (
-            <div className="py-8 text-center">
-              <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <PatientSheet open={open} setOpen={setOpen} patient={patient} />
     </div>
   )
 }

@@ -9,6 +9,7 @@ export const handler: Handler = async (event) => {
     const {
         consultation,
         recipes,
+        biometric
     } = event.arguments;
 
     try {
@@ -37,6 +38,9 @@ export const handler: Handler = async (event) => {
               createdAt: ""
           });
         }
+      }
+      if (biometric) {
+        await schemaClient.models.Biometric.create(biometric!)
       }
       return appointmentResponse.data;
       
