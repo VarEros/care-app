@@ -180,6 +180,10 @@ export const schema = a.schema({
       createdAt: a.datetime().required(),
     })
     .identifier(["type", "createdAt"])
+    .authorization((allow) => [
+        allow.group("Admins").to(["read", "create", "update"]),
+        allow.groups(["Doctors", "Patients"]).to(["read"]),
+      ])
 })
 .authorization((allow) => [
   allow.resource(postConfirmation),
