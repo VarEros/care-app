@@ -82,6 +82,7 @@ export const schema = a.schema({
       bloodType: a.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']),
       appointments: a.hasMany("Appointment", "patientId"), // relación con Appointment
       recipes: a.hasMany("Recipe", "patientId"), // relación con Recipe
+      biometrics: a.hasMany("Biometric", "patientId")
     })
     .authorization((allow) => [
       allow.ownerDefinedIn("id").to(["read", "create", "update"]), // patient
