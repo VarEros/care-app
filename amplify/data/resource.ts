@@ -79,7 +79,7 @@ export const schema = a.schema({
       exams: a.string(),
       background: a.string(),
       allergies: a.string().array(),
-      bloodType: a.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']),
+      bloodType: a.enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]),
       appointments: a.hasMany("Appointment", "patientId"), // relación con Appointment
       recipes: a.hasMany("Recipe", "patientId"), // relación con Recipe
       biometrics: a.hasMany("Biometric", "patientId")
