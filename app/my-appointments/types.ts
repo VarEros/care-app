@@ -13,13 +13,7 @@ export type Doctor = {
   id: string
   name: string
   specialty: string
-  businessHours?: Record<
-    string,
-    {
-      start: string
-      end: string
-    }
-  >
+  businessHours?: any
 }
 
 export const doctorList: Doctor[] = [

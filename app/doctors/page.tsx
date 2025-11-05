@@ -87,18 +87,18 @@ export default function DoctorsPage() {
   useEffect(() => {
     const loadDoctors = async () => {
       try {
-        setTimeout(() => {
-          const doctors = doctorList as DoctorSchema[];
-          setDoctors(doctors);
-          setLoading(false);
-        }, 2000);
-        // const { data, errors } = await client.models.Doctor.list()
-        // if (errors) console.error(errors)
-        // else setDoctors(data)
+        // setTimeout(() => {
+        //   const doctors = doctorList as DoctorSchema[];
+        //   setDoctors(doctors);
+        //   setLoading(false);
+        // }, 2000);
+        const { data, errors } = await client.models.Doctor.list()
+        if (errors) console.error(errors)
+        else setDoctors(data)
       } catch (err) {
         console.error("Failed to load doctors:", err)
       } finally {
-        // setLoading(false)
+        setLoading(false)
       }
     }
 
@@ -108,19 +108,19 @@ export default function DoctorsPage() {
   useEffect(() => {
     const loadSpecialties = async () => {
       try {
-        // const { data, errors } = await client.models.Catalog.list({ type: "Especialidades", selectionSet: ["value"]})
-        // if (errors) console.error(errors)
-        // else setSpecialties(data.map(catalog => catalog.value))
-        setTimeout(() => {
-          setSpecialties(["Neurologia", "Ojontologo"])
-          if (selectedDoctor){
-            form.setValue("specialty", selectedDoctor!.specialty)
-          }
-        }, 1000);
+        const { data, errors } = await client.models.Catalog.list({ type: "Especialidades", selectionSet: ["value"]})
+        if (errors) console.error(errors)
+        else setSpecialties(data.map(catalog => catalog.value))
+        // setTimeout(() => {
+        //   setSpecialties(["Neurologia", "Ojontologo"])
+        //   if (selectedDoctor){
+        //     form.setValue("specialty", selectedDoctor!.specialty)
+        //   }
+        // }, 1000);
       } catch (err) {
         console.error("Failed to load doctors:", err)
       } finally {
-        // setLoading(false)
+        setLoading(false)
       }
     }
     if (openDialog) {

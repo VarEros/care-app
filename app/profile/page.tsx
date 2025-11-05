@@ -20,6 +20,7 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { client } from "@/lib/amplifyClient"
 import { Nullable } from "@aws-amplify/data-schema"
+import { bloodTypeMap } from "@/lib/constants"
 
 /**
  * NOTE:
@@ -29,7 +30,7 @@ import { Nullable } from "@aws-amplify/data-schema"
 
 /* ----------------- schema (only editable fields) ----------------- */
 const genders = z.enum(["Masculino", "Femenino", "Otro"])
-const bloodTypes = z.enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"])
+const bloodTypes = z.enum(["A_POSITIVO", "A_NEGATIVO", "B_POSITIVO", "B_NEGATIVO", "AB_POSITIVO", "AB_NEGATIVO", "O_POSITIVO", "O_NEGATIVO"])
 
 const editableProfileSchema = z.object({
   gender: genders.optional(),
@@ -46,7 +47,7 @@ export type Profile = {
   readonly gender: "Masculino" | "Femenino" | "Otro" | null
   readonly background: Nullable<string>
   readonly allergies: Nullable<string>[] | null
-  readonly bloodType: "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-" | null
+  readonly bloodType: "A_POSITIVO" | "A_NEGATIVO" | "B_POSITIVO" | "B_NEGATIVO" | "AB_POSITIVO" | "AB_NEGATIVO" | "O_POSITIVO" | "O_NEGATIVO" | null
   readonly name: string
   readonly email: string
   readonly birthdate: string
@@ -62,7 +63,7 @@ export const sampleInitial: Profile = {
   gender: "Masculino",
   background: "Diabética tipo 2. Hipertensión controlada.",
   allergies: ["Penicilina"],
-  bloodType: "O+",
+  bloodType: "O_POSITIVO",
 }
 
 /* ----------------- component ----------------- */
@@ -80,7 +81,6 @@ export default function PatientProfilePage() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        // Replace patientId with your logic (e.g. auth user sub or "me")
         // const { data, errors } = await client.models.Patient.get({"id": "1"}, { selectionSet: ["cedula", "name", "email", "birthdate", "gender", "background", "allergies", "bloodType"]})
         // if (errors) console.error(errors)
         // else {
@@ -259,9 +259,9 @@ export default function PatientProfilePage() {
                           <SelectValue placeholder="Selecciona tipo de sangre" />
                         </SelectTrigger>
                         <SelectContent>
-                          {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((b) => (
-                            <SelectItem key={b} value={b}>
-                              {b}
+                          {Object.entries(bloodTypeMap).map(([key, label]) => (
+                            <SelectItem key={key} value={key}>
+                              {label}
                             </SelectItem>
                           ))}
                         </SelectContent>

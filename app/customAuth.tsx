@@ -25,7 +25,16 @@ I18n.putVocabularies({
     "We Emailed You": "Te mandamos un correo",
     "Confirm": "Confirmar",
     "Confirming": "Confirmando",
+    "Changing": "Cambiando",
+    "Password must have at least 8 characters": "La contraseña debe tener al menos 8 caracteres",
+    "Password must have lower case letters": "La contraseña debe tener letras minúsculas",
+    "Password must have upper case letters": "La contraseña debe tener letras mayúsculas",
+    "Password must have numbers": "La contraseña debe tener números",
+    "Password must have special characters": "La contraseña debe tener caracteres especiales",
+    "Change Password": "Cambiar Contraseña",
+    "Invalid session for the user, session is expired.": "Sesión inválida para el usuario, la sesión ha expirado.",
     "Invalid verification code provided, please try again.": "Codigo de verificación invalido, por favor intetar otra vez.",
+    
     "Resend Code": "Reenviar Codigo",
     "Your code is on the way. To log in, enter the code we emailed to": "Tu codigo esta en camino. Para iniciar sesión, introduce el codigo que mandamos al correo electronico",
     "It may take a minute to arrive": "Talvez tome un minuto en llegar"
@@ -85,7 +94,7 @@ export const formFields: {
       label: "Nombre Completo",
       isRequired: true
     },
-    cedula: {
+    "custom:cedula": {
       placeholder: "Ej: 001-010199-1234A",
       label: "Cedula",
       isRequired: true,
@@ -131,4 +140,21 @@ export const formFields: {
       isRequired: true,
     },
   },
+  forceNewPassword: {
+    password: {
+      placeholder: "Nueva contraseña",
+      label: "Nueva contraseña",
+      isRequired: true,
+    },
+    confirm_password: {
+      placeholder: "Confirma tu nueva contraseña",
+      label: "Confirmar contraseña",
+      isRequired: true,
+    },
+    name: {
+      placeholder: "Introduce tus nombres y apellidos",
+      label: "Nombre Completo",
+      isRequired: true
+    },
+  }
 };

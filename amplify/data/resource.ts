@@ -11,10 +11,13 @@ export const createCompleteConsultationHandler = defineFunction({
   entry: "./createCompleteConsultation/handler.ts", 
 });
 
-const dosageFormats = a.enum(["mg", "ml", "pastilla", "gota", "tableta", "cápsula"])
+const dosageFormats = a.enum(["mg", "ml", "pastilla", "gota", "tableta", "capsula"])
 const frequencyTypes = a.enum(["Horas", "Dias", "Semanas"])
 const genders =  a.enum(["Masculino", "Femenino", "Otro"])
 const appointmentTypes = a.enum(["Primaria", "Seguimiento", "Preventiva"])
+const bloodTypes = a.enum(["A_POSITIVO", "A_NEGATIVO", "B_POSITIVO", "B_NEGATIVO", "AB_POSITIVO", "AB_NEGATIVO", "O_POSITIVO", "O_NEGATIVO"])
+const appointmentStatuses = a.enum(["Registrada", "Aprobada", "Completada", "Cancelada"])
+const simpleStatuses = a.enum(["Activo", "Inactivo"])
 
 const baseDoctor = {
   name: a.string().required(),
@@ -60,7 +63,7 @@ export const schema = a.schema({
     .model({
       ...baseDoctor,
       businessHours: a.json(),
-      status: a.enum(["Activo", "Inactivo"]),
+      status: simpleStatuses,
       appointments: a.hasMany("Appointment", "doctorId"), // relación con Appointment
     })
     .authorization((allow) => [
@@ -79,7 +82,7 @@ export const schema = a.schema({
       exams: a.string(),
       background: a.string(),
       allergies: a.string().array(),
-      bloodType: a.enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]),
+      bloodType: bloodTypes,
       appointments: a.hasMany("Appointment", "patientId"), // relación con Appointment
       recipes: a.hasMany("Recipe", "patientId"), // relación con Recipe
       biometrics: a.hasMany("Biometric", "patientId")
@@ -107,7 +110,7 @@ export const schema = a.schema({
       type: appointmentTypes,
       motive: a.string(),
       reason: a.string().authorization((allow) => allow.group("Patients").to(["read"])),
-      status: a.enum(["Registrada", "Aprobada", "Completada", "Cancelada"]),
+      status: appointmentStatuses,
       doctor: a.belongsTo("Doctor", "doctorId"),
       patient: a.belongsTo("Patient", "patientId"),
       consultation: a.hasOne("Consultation", ["doctorId", "appointmentScheduledOn"]),
@@ -153,19 +156,19 @@ export const schema = a.schema({
       .mutation()
       .arguments(baseDoctor)
       .returns(a.ref("Doctor"))
-      .authorization((allow) => [allow.groups(["Admins"])])
+      .authorization((allow) => [allow.group("Admins")])
       .handler(a.handler.function(createDoctorWithUserHandler)), // only admins create doctors 
 
     BaseRecipe: a.customType(baseRecipe),
     BaseConsultation: a.customType(baseConsultation),
-    baseBiometric: a.customType(baseBiometric),
+    BaseBiometric: a.customType(baseBiometric),
     
     createCompleteConsultation: a
       .mutation()
       .arguments({
         consultation: a.ref("BaseConsultation").required(),
         recipes: a.ref("BaseRecipe").array(),
-        biometric: a.ref("baseBiometric"),
+        biometric: a.ref("BaseBiometric"),
       })
       .returns(a.ref("Appointment")) // return the created consultation
       .authorization((allow) => [
@@ -176,7 +179,7 @@ export const schema = a.schema({
     Catalog: a.model ({
       type: a.string().required(),
       value: a.string().required(),
-      status: a.enum(["Activo", "Inactivo"]),
+      status: simpleStatuses,
       createdAt: a.datetime().required(),
     })
     .identifier(["type", "createdAt"])

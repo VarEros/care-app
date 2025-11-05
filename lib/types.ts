@@ -9,5 +9,5 @@ export type PatientRecord = {
     readonly cedula: string;
     readonly background: Nullable<string>;
     readonly allergies: Nullable<string>[] | null;
-    readonly bloodType: "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-" | null;
+    readonly bloodType: "A_POSITIVO" | "A_NEGATIVO" | "B_POSITIVO" | "B_NEGATIVO" | "AB_POSITIVO" | "AB_NEGATIVO" | "O_POSITIVO" | "O_NEGATIVO" | null;
 }

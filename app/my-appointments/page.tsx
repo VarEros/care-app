@@ -30,39 +30,39 @@ export default function MyAppointmentsPage() {
         const sub = tokens?.idToken?.payload["sub"] as string;
         patientId = sub; 
 
-        // if (!sub) {
-        //   setLoading(false);
-        //   return;
-        // }
-        // const { data, errors } = await client.models.Appointment.listAppointmentByPatientIdAndScheduledOn({ patientId: patientId }, { selectionSet: ["scheduledOn", "status", "doctor.name", "doctor.specialty"] } )
-        setTimeout(() => {
-          const appointments = [
-            {
-              scheduledOn: "20 de Octubre, 2025 - 8:30PM",
-              status: "Aprobada" as any,
-              doctor: {
-                name: "Mario Lopez",
-                specialty: "Neurocirugia"
-              }
-            },
-            {
-              scheduledOn: "25 de Octubre, 2025 - 2:30PM",
-              status: "Aprobada" as any,
-              doctor: {
-                name: "Maria Gutierrez",
-                specialty: "Cardiologia"
-              }
-            }
-          ]
-          setAppointments(appointments)
-          setLoading(false)
-        }, 500);
-        // if (errors) console.error(errors)
-        // else setAppointments(data)
+        if (!sub) {
+          setLoading(false);
+          return;
+        }
+        const { data, errors } = await client.models.Appointment.listAppointmentByPatientIdAndScheduledOn({ patientId: patientId }, { selectionSet: ["scheduledOn", "status", "doctor.name", "doctor.specialty"] } )
+        // setTimeout(() => {
+        //   const appointments = [
+        //     {
+        //       scheduledOn: "20 de Octubre, 2025 - 8:30PM",
+        //       status: "Aprobada" as any,
+        //       doctor: {
+        //         name: "Mario Lopez",
+        //         specialty: "Neurocirugia"
+        //       }
+        //     },
+        //     {
+        //       scheduledOn: "25 de Octubre, 2025 - 2:30PM",
+        //       status: "Aprobada" as any,
+        //       doctor: {
+        //         name: "Maria Gutierrez",
+        //         specialty: "Cardiologia"
+        //       }
+        //     }
+        //   ]
+        //   setAppointments(appointments)
+        //   setLoading(false)
+        // }, 500);
+        if (errors) console.error(errors)
+        else setAppointments(data)
       } catch (err) {
         console.error("Failed to load appointments:", err)
       } finally {
-        // setLoading(false)
+        setLoading(false)
       }
     }
 

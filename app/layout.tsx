@@ -31,8 +31,8 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-        {/* <Authenticator formFields={formFields}>
-          {({ signOut, user }) => ( */}
+        <Authenticator formFields={formFields}>
+          {({ signOut, user }) => (
             <>
               <Toaster />
               <div className="flex">
@@ -76,7 +76,7 @@ export default function RootLayout({
                         </Sheet>
                       </div>
 
-                      <span className="text-base">Inicio</span>
+                      <span className="text-base">Bienvenido, {user?.signInDetails?.loginId}</span>
                     </div>
                   </header>
 
@@ -84,8 +84,8 @@ export default function RootLayout({
                 </div>
               </div>
             </>
-          {/* )}
-        </Authenticator>  */}
+          )}
+        </Authenticator> 
         </ThemeProvider>
       </body>
     </html>

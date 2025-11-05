@@ -24,9 +24,10 @@ export const auth = defineAuth({
     birthdate: {
       required: true
     },
-    phoneNumber: {
-      required: false,
-      mutable: true,
+    "custom:cedula": {
+      dataType: "String",
+      mutable: false,
+      maxLen: 16
     }
   },
   triggers: {

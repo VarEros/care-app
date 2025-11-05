@@ -105,37 +105,33 @@ export const  CreateAppointmentDialog: React.FC<Props> = ({ setAppointments, pat
 
     const loadSpecialties = async () => {
       try {
-        // const { data, errors } = await client.models.Catalog.list({ type: "Especialidades", selectionSet: ["value"]})
-        // if (errors) console.error(errors)
-        // else setSpecialties(data.map(catalog => catalog.value))
-        setTimeout(() => {
-          setSpecialties(["Neurologia", "Ojontologo"])
-          if (selectedDoctor){
-            form.setValue("specialty", selectedDoctor!.specialty)
-          }
-        }, 1000);
+        const { data, errors } = await client.models.Catalog.list({ type: "Especialidades", selectionSet: ["value"]})
+        if (errors) console.error(errors)
+        else setSpecialties(data.map(catalog => catalog.value))
+        // setTimeout(() => {
+        //   setSpecialties(["Neurologia", "Ojontologo"])
+        //   if (selectedDoctor){
+        //     form.setValue("specialty", selectedDoctor!.specialty)
+        //   }
+        // }, 1000);
       } catch (err) {
         console.error("Failed to load doctors:", err)
-      } finally {
-        // setLoading(false)
       }
     }
     
     const loadDoctors = async () => {
       try {
-        setTimeout(() => {
-          const doctors = doctorList as Doctor[];
-          setDoctors(doctors);
-          // setLoading(false);
-        }, 2000);
-        // const { data, errors } = await client.models.Doctor.list()
-        // if (errors) console.error(errors)
-        // else setDoctors(data)
+        // setTimeout(() => {
+        //   const doctors = doctorList as Doctor[];
+        //   setDoctors(doctors);
+        //   // setLoading(false);
+        // }, 2000);
+        const { data, errors } = await client.models.Doctor.list({ selectionSet: ["id", "name", "specialty", "businessHours"]})
+        if (errors) console.error(errors)
+        else setDoctors(data)
       } catch (err) {
         console.error("Failed to load doctors:", err)
-      } finally {
-        // setLoading(false)
-      }
+      } 
     }
 
     loadSpecialties()
@@ -148,19 +144,19 @@ export const  CreateAppointmentDialog: React.FC<Props> = ({ setAppointments, pat
     const dayOfDate = selectedDateIso.split("T")[0]
     const loadAppointments = async () => {
       try {
-        // const { data, errors } = await client.models.Appointment.list({ doctorId: selectedDoctorId, scheduledOn: { beginsWith: dayOfDate}, selectionSet: ["scheduledOn"]})
-        // if (errors) console.error(errors)
-        // else setAppointments(data.map(apt => apt.scheduledOn))
-        await setTimeout(() => {
-          setTakenTimes(["09:00", "09:20", "10:40", "11:00", "11:40", "14:40", "15:40", "16:00" , "16:40"])
-          setLoadingAppointments(false)
-        }, 700);
+        const { data, errors } = await client.models.Appointment.list({ doctorId: selectedDoctorId, scheduledOn: { beginsWith: dayOfDate}, selectionSet: ["scheduledOn"]})
+        if (errors) console.error(errors)
+        else setTakenTimes(data.map(apt => apt.scheduledOn))
+      //   await setTimeout(() => {
+      //     setTakenTimes(["09:00", "09:20", "10:40", "11:00", "11:40", "14:40", "15:40", "16:00" , "16:40"])
+      //     setLoadingAppointments(false)
+      //   }, 700);
       } catch (err) {
         console.error("Failed to load appointments:", err)
       } 
-      // finally {
-      //   setLoadingAppointments(false)
-      // }
+      finally {
+        setLoadingAppointments(false)
+      }
     }
     loadAppointments()
   }, [selectedDateIso])

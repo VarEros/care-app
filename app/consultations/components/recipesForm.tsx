@@ -40,7 +40,7 @@ export const recipeSchema = z.object({
   consultationId: z.string().optional(),
   medication: z.string().min(1, "El medicamento es requerido"),
   dosage: z.coerce.number().min(1, "La dosis es requerida"),
-  dosageFormat: z.enum(["mg", "ml", "pastilla", "gota", "tableta", "cápsula"]),
+  dosageFormat: z.enum(["mg", "ml", "pastilla", "gota", "tableta", "capsula"]),
   frequency: z.coerce.number().min(1, "La frecuencia es requerida"),
   frequencyType: z.enum(["Horas", "Dias", "Semanas"]),
   until: z    
@@ -60,28 +60,28 @@ interface RecipesFormProps {
 export function RecipesForm({ recipes, setRecipes }: RecipesFormProps) {
     const [open, setOpen] = useState(false)
 
-  const form = useForm<RecipeFormValues>({
-    resolver: zodResolver(recipeSchema),
-    defaultValues: {
-      medication: "",
-      dosage: 1,
-      dosageFormat: "mg",
-      frequency: 1,
-      frequencyType: "Dias",
-      until: undefined,
-      notes: "",
-    },
-  })
+    const form = useForm<RecipeFormValues>({
+        resolver: zodResolver(recipeSchema),
+        defaultValues: {
+        medication: "",
+        dosage: 1,
+        dosageFormat: "mg",
+        frequency: 1,
+        frequencyType: "Dias",
+        until: undefined,
+        notes: "",
+        },
+    })
 
-  const onSubmit = (values: RecipeFormValues) => {
-    setRecipes((prev) => [...prev, values])
-    setOpen(false)
-    form.reset()
-  }
+    const onSubmit = (values: RecipeFormValues) => {
+        setRecipes((prev) => [...prev, values])
+        setOpen(false)
+        form.reset()
+    }
 
-  const removeRecipe = (index: number) => {
-    setRecipes((prev) => prev.filter((_, i) => i !== index))
-  }
+    const removeRecipe = (index: number) => {
+        setRecipes((prev) => prev.filter((_, i) => i !== index))
+    }
 
   return (
     <div className="md:w-1/3 flex flex-col overflow-auto space-y-4">
