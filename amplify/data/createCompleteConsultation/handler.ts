@@ -35,7 +35,6 @@ export const handler: Handler = async (event) => {
               ...recipe!,
               consultationId,
               patientId,
-              createdAt: ""
           });
         }
       }
