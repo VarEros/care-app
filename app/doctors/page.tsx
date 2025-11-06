@@ -180,7 +180,13 @@ export default function DoctorsPage() {
           description: errors[0]["message"]
         })
       } else if (data) {
-        setDoctors((prev) => [...prev, data])
+        if (selectedDoctor) {
+          setDoctors((prev) =>
+            prev.map((doc) => (doc.id === data.id ? data : doc))
+          )
+        } else {
+          setDoctors((prev) => [...prev, data])
+        }
         setOpenDialog(false)
         toast.success("Doctor creado con exito", {
           description: values.email + " ya puede ingresar al sistema."

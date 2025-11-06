@@ -1,35 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { client } from "@/lib/amplifyClient"
-import type { Schema } from "@/amplify/data/resource"
-import { z } from "zod"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { CalendarIcon, Check, ChevronsUpDown, Loader2 } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Nullable } from "@aws-amplify/data-schema"
-import { es } from "date-fns/locale"
-
-// shadcn/ui components
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
+import { Loader2 } from "lucide-react"
 import {
   Item,
   ItemActions,
@@ -37,145 +10,118 @@ import {
   ItemDescription,
   ItemTitle,
 } from "@/components/ui/item"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog"
 import { toast } from "sonner"
+import { fetchAuthSession } from "aws-amplify/auth"
+import { Nullable } from "@aws-amplify/data-schema"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select"
 
-const appointmentSchema = z.object({
-  doctorId: z.string(),
-  timeScheduled: z.string().min(2, "El nombre es requerido"),
-  dateScheduled: z
-    .string()
-    .nonempty("La fecha de nacimiento requerida")
-    .refine((val) => !isNaN(Date.parse(val)), "La fecha es invalida"),
-  type: z.enum(["Primaria", "Preventiva"], {
-    required_error: "El tipo es requerido",
-  }),
-})
-
-type AppointmentFormValues = z.infer<typeof appointmentSchema>
 type Appointment = {
-  readonly scheduledOn: string;
+  readonly status: "Registrada" | "Aprobada" | "Completada" | "Cancelada" | null
+  readonly scheduledOn: string
+  readonly motive: Nullable<string>
   readonly patient: {
-    readonly name: string;
-    readonly cedula: Nullable<string>;
+    readonly name: string
+    readonly cedula: string
   }
 }
 
 export default function AppointmentsPage() {
+  let doctorId = ""
   const [appointments, setAppointments] = useState<Array<Appointment>>([])
-  const [doctors, setDoctors] = useState<Array<Schema["Doctor"]["updateType"]>>([])
-  const [specialties, setSpecialties] = useState<string[]>([])
-  const [specialty, setSpecialty] = useState<string>("")
-
-  const [openDialog, setOpenDialog] = useState(false)
-  const [openSpecialties, setOpenSpecialties] = useState(false)
-  const [openCalendar, setOpenCalendar] = useState(false)
-  const [openDoctors, setOpenDoctors] = useState(false)
-
+  const [active, setActive] = useState<Appointment | null>(null)
   const [loading, setLoading] = useState(true)
-  const [loadingDoctors, setLoadingDoctors] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [statusFilter, setStatusFilter] = useState<string>("Registrada")
 
-  // Setup form
-  const form = useForm<AppointmentFormValues>({
-    resolver: zodResolver(appointmentSchema),
-    defaultValues: {
-      doctorId: "",
-      timeScheduled: "",
-      dateScheduled: "",
-      type: undefined
-    },
-  })
-
-  // Helper to check if the selected date’s weekday is available
-  let businessHours: object;
-  const isOpenDay = (date: Date) => {
-    const weekday = date
-      .toLocaleString("en-ES", { weekday: "long" })
-      .toLowerCase()
-    return Object.keys(businessHours).includes(weekday)
-  }
-
-  // Load doctors on mount
+  // Load doctor appointments
   useEffect(() => {
     const loadAppointments = async () => {
       try {
-        // const { data, errors } = await client.models.Appointment.list({ doctorId: "1", selectionSet: ["scheduledOn", "patient.name", "patient.cedula"] })
-        setTimeout(() => {
-          const specialties = [
-            "Cardiologia",
-            "Ortopedia"
-          ]
-          setSpecialties(specialties)
-          const appointments = [
-            {
-              scheduledOn: "20 de Octubre, 2025 - 8:30PM",
-              patient: {
-                name: "Mario Lopez",
-                cedula: "001-240504-1023S"
-              }
-            },
-            {
-              scheduledOn: "25 de Octubre, 2025 - 2:30PM",
-              patient: {
-                name: "Maria Gutierrez",
-                cedula: "001-240504-1023S"
-              }
-            }
-          ]
-          setAppointments(appointments)
+        const { tokens } = await fetchAuthSession()
+        const sub = tokens?.idToken?.payload["sub"] as string
+        doctorId = sub
+
+        if (!sub) {
           setLoading(false)
-        }, 500);
-        // if (errors) console.error(errors)
-        // else setAppointments(data)
+          return
+        }
+
+        const { data, errors } = await client.models.Appointment.list({
+          doctorId,
+          selectionSet: ["scheduledOn", "motive", "status", "patient.name", "patient.cedula"],
+        })
+
+        if (errors) console.error(errors)
+        else setAppointments(data)
       } catch (err) {
         console.error("Failed to load appointments:", err)
       } finally {
-        // setLoading(false)
+        setLoading(false)
       }
     }
 
     loadAppointments()
   }, [])
 
-  // Handle appointment creation
-  const onSubmit = async (values: AppointmentFormValues) => {
+  // Update appointment status
+  const handleUpdateAppointment = async (
+    scheduledOn: string,
+    type: "Cancelada" | "Aprobada" | "Completada"
+  ) => {
     setSubmitting(true)
     try {
-      // const { data, errors } = await client.models.Appointment.create(values)
-      // if (errors) {
-      //   console.error("Error creating appointment:", errors)
-      //   toast.error("Error al crear al appointment", {
-      //     description: errors[0]["message"]
-      //   })
-      // } else if (data) {
-      //   setAppointments((prev) => [...prev, data])
-      //   setOpenDialog(false)
-      //   toast.success("Cita creada con exito", {
-      //     description: values.doctorId + " ya puede ingresar al sistema."
-      //   })
-      //   form.reset()
-      // }
+      const { data, errors } = await client.models.Appointment.update(
+        { doctorId, scheduledOn, status: type },
+        { selectionSet: ["scheduledOn", "motive", "status", "patient.name", "patient.cedula"] }
+      )
+
+      if (errors) {
+        console.error("Error updating appointment:", errors)
+        toast.error("Error al " + type.toLowerCase() + " la cita", {
+          description: errors[0]?.message,
+        })
+      } else if (data) {
+        setAppointments((prev) =>
+          prev.map((apt) => (apt.scheduledOn === data.scheduledOn ? data : apt))
+        )
+        if (active?.scheduledOn === data.scheduledOn) setActive(data)
+        toast.success("Cita " + type + " con éxito", {
+          description: "La cita ha sido " + type.toLowerCase() + " correctamente.",
+        })
+      }
     } catch (err) {
-      console.error("Create failed:", err)
-      toast.error("Algo salio mal...")
+      console.error("Update failed:", err)
+      toast.error("Algo salió mal...")
     } finally {
       setSubmitting(false)
     }
   }
+
+  const handleViewDetails = (scheduledOn: string) => {
+    const apt = appointments.find((a) => a.scheduledOn === scheduledOn) || null
+    setActive(apt)
+  }
+
+  const filteredAppointments = useMemo(() => {
+    if (statusFilter === "all") return appointments
+    return appointments.filter((a) => a.status === statusFilter)
+  }, [appointments, statusFilter])
 
   if (loading)
     return (
@@ -185,227 +131,151 @@ export default function AppointmentsPage() {
       </div>
     )
 
-  const handleRevise = (apt: Appointment)=> {
-    
-  }
-
   return (
     <div className="sm:p-6">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
         <h1 className="text-xl font-bold">Citas</h1>
 
-        {/* Dialog for adding new Cita */}
-        <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-          <DialogTrigger asChild>
-            <Button className="w-[200px]">Agendar Cita</Button>
-          </DialogTrigger>
-
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Creacion de Nueva Cita</DialogTitle>
-              <DialogDescription>
-                Llena el formulario para registrar su cita, espere hasta que el doctor revise y valide su cita para considerarla agendada.
-              </DialogDescription>
-            </DialogHeader>
-            {!specialty && (
-              <Popover open={openSpecialties} onOpenChange={setOpenSpecialties}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={openSpecialties}
-                    className="justify-between"
-                  >
-                    {specialty || "Selecciona un especialidad..."}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="p-0">
-                  <Command>
-                    <CommandInput placeholder="Busca especialidad..." className="h-9" />
-                    <CommandList>
-                      <CommandEmpty>Especialidad no encontrada</CommandEmpty>
-                      <CommandGroup>
-                        {specialties.map((s, index) => (
-                          <CommandItem
-                            key={index}
-                            value={s}
-                            onSelect={(currentValue) => {
-                              setSpecialty(currentValue)
-                              setOpenSpecialties(false)
-                            }}
-                          >
-                            {s}
-                            <Check
-                              className={cn(
-                                "ml-auto",
-                                specialty === s ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            )}
-            {specialty && (
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-
-                  {/* Seleccionar doctor */}
-                  <FormField
-                    control={form.control}
-                    name="doctorId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Doctor</FormLabel>
-                        <FormControl>
-                          <Popover open={openDoctors} onOpenChange={setOpenDoctors}>
-                            <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  role="combobox"
-                                  aria-expanded={openDoctors}
-                                  className="justify-between"
-                                >
-                                  {field.value
-                                    ? doctors.find((d) => d.id === field.value)?.name
-                                    : "Selecciona un doctor..."}
-                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="p-0">
-                              <Command>
-                                <CommandInput placeholder="Busca doctores..." className="h-9" />
-                                <CommandList>
-                                  <CommandEmpty>Doctor no encontrado</CommandEmpty>
-                                  <CommandGroup>
-                                    {doctors.map((d) => (
-                                      <CommandItem
-                                        key={d.id}
-                                        value={d.id}
-                                        onSelect={(currentValue) => {
-                                          field.onChange(currentValue)
-                                          businessHours = doctors.find((d) => d.id === field.value)?.businessHours as object ?? {}
-                                          if (field.value === currentValue) {
-                                            form.setValue("dateScheduled", "")
-                                            form.setValue("timeScheduled", "")
-                                          }
-                                          setOpenDoctors(false)
-                                        }}
-                                      >
-                                        {d.name}
-                                        <Check
-                                          className={cn(
-                                            "ml-auto",
-                                            field.value === d.id ? "opacity-100" : "opacity-0"
-                                          )}
-                                        />
-                                      </CommandItem>
-                                    ))}
-                                  </CommandGroup>
-                                </CommandList>
-                              </Command>
-                            </PopoverContent>
-                          </Popover>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Date of Schedule */}
-                  <FormField
-                    control={form.control}
-                    name="dateScheduled"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Fecha de Cita</FormLabel>
-                        <FormControl>
-                          <Popover open={openCalendar} onOpenChange={setOpenCalendar}>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="outline"
-                                className="justify-between w-full"
-                              >
-                                {field.value
-                                  ? new Date(field.value).toLocaleDateString("es-ES", {
-                                    weekday: "long",
-                                    day: "numeric",
-                                    month: "long",
-                                    year: "numeric",
-                                  })
-                                  : "Seleccionar fecha..."}
-                                <CalendarIcon className="ml-2 h-4 w-4 opacity-50" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                locale={es} // 🇪🇸 calendar in Spanish
-                                selected={field.value ? new Date(field.value) : undefined}
-                                captionLayout="dropdown"
-                                onSelect={(date) => {
-                                  field.onChange(date?.toISOString() || "")
-                                  setOpenCalendar(false)
-                                }}
-                                disabled={(date) => !isOpenDay(date)} // disable non-working days
-                              />
-                            </PopoverContent>
-                          </Popover>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-
-                  <DialogFooter>
-                    <Button type="submit" className="w-full" disabled={submitting}>
-                      {submitting ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Guardando...
-                        </>
-                      ) : (
-                        "Crear Cita"
-                      )}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            )}
-          </DialogContent>
-        </Dialog>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[220px]">
+            <SelectValue placeholder="Filtrar por estado" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas</SelectItem>
+            <SelectItem value="Registrada">Registradas</SelectItem>
+            <SelectItem value="Aprobada">Aprobadas</SelectItem>
+            <SelectItem value="Completada">Completadas</SelectItem>
+            <SelectItem value="Cancelada">Canceladas</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      {/* Doctor List */}
-      {appointments.length === 0 ? (
-        <p>No se encontraron citas.</p>
+      {/* Appointment list */}
+      {filteredAppointments.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No se encontraron citas.</p>
       ) : (
         <ul className="space-y-2">
-          {appointments.map((apt) => (
+          {filteredAppointments.map((apt) => (
             <Item variant="outline" key={apt.scheduledOn}>
               <ItemContent>
                 <ItemTitle>
-                  Cita con {apt.patient.name}
-                  <span className="text-muted-foreground hidden sm:block"> {apt.patient.cedula}</span>
+                  Cita con {apt.patient.name}{" - "}
+                  <span className="text-muted-foreground hidden sm:block">{apt.patient.cedula}</span>
                 </ItemTitle>
                 <ItemDescription>
-                  Agendada para {apt.scheduledOn}
+                  Agendada para {apt.scheduledOn}, por el motivo: {apt.motive ?? "—"}
                 </ItemDescription>
+                <ItemActions>
+                  <Button size="sm" onClick={() => handleViewDetails(apt.scheduledOn)}>
+                    Ver detalles
+                  </Button>
+                </ItemActions>
               </ItemContent>
-              <ItemActions>
-                <Button onClick={() => handleRevise(apt)} variant="secondary" size="sm">
-                  Revisar
-                </Button>
-              </ItemActions>
             </Item>
           ))}
         </ul>
       )}
+
+      {/* Details dialog */}
+      <Dialog open={Boolean(active)} onOpenChange={(open) => !open && setActive(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Detalles de la cita</DialogTitle>
+            <DialogDescription>
+              Información de la cita seleccionada. Desde aquí puedes cambiar su estado.
+            </DialogDescription>
+          </DialogHeader>
+
+          {active ? (
+            <div className="space-y-4 py-2">
+              <div>
+                <p className="text-xs text-muted-foreground">Paciente</p>
+                <p className="font-medium">{active.patient.name}</p>
+                <p className="text-sm text-muted-foreground">{active.patient.cedula}</p>
+              </div>
+
+              <div>
+                <p className="text-xs text-muted-foreground">Fecha</p>
+                <p className="font-medium">{active.scheduledOn}</p>
+              </div>
+
+              <div>
+                <p className="text-xs text-muted-foreground">Motivo</p>
+                <p className="font-medium">{active.motive ?? "—"}</p>
+              </div>
+
+              <div>
+                <p className="text-xs text-muted-foreground">Estado</p>
+                <p className="font-medium">{active.status ?? "—"}</p>
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex gap-2 flex-wrap">
+                  <Button variant="outline" onClick={() => setActive(null)} disabled={submitting}>
+                    Volver
+                  </Button>
+
+                  {active.status === "Registrada" && (
+                    <>
+                      <Button
+                        onClick={() => handleUpdateAppointment(active.scheduledOn, "Aprobada")}
+                        disabled={submitting}
+                      >
+                        {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                        Aprobar
+                      </Button>
+
+                      <Button
+                        variant="destructive"
+                        onClick={() => handleUpdateAppointment(active.scheduledOn, "Cancelada")}
+                        disabled={submitting}
+                      >
+                        {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                        Cancelar
+                      </Button>
+                    </>
+                  )}
+
+                  {active.status === "Aprobada" && (
+                    <>
+                      <Button
+                        onClick={() => handleUpdateAppointment(active.scheduledOn, "Completada")}
+                        disabled={submitting}
+                      >
+                        {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                        Marcar como completada
+                      </Button>
+
+                      <Button
+                        variant="destructive"
+                        onClick={() => handleUpdateAppointment(active.scheduledOn, "Cancelada")}
+                        disabled={submitting}
+                      >
+                        {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                        Cancelar
+                      </Button>
+                    </>
+                  )}
+
+                  {(active.status === "Completada" || active.status === "Cancelada") && (
+                    <p className="text-sm text-muted-foreground self-center">
+                      No hay acciones disponibles
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="py-8 text-center">
+              <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+            </div>
+          )}
+
+          <DialogFooter />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

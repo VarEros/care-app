@@ -41,23 +41,23 @@ export default function Sidebar() {
     let alive = true;
 
     const loadGroups = async () => {
-      // try {
-      //   setLoadingGroups(true)
-      //   const { tokens } = await fetchAuthSession()
-      //   // tokens?.accessToken?.payload["cognito:groups"] or tokens?.idToken?.payload depending on your setup
-      //   const gs =
-      //     (tokens?.accessToken?.payload?.["cognito:groups"] as string[] | undefined) ??
-      //     (tokens?.idToken?.payload?.["cognito:groups"] as string[] | undefined) ??
-      //     []
-      //   if (alive) setGroups(gs)
-      // } catch (err) {
-      //   console.error("Failed to fetch auth session:", err)
-      //   if (alive) setGroups([])
-      // } finally {
-      //   if (alive) setLoadingGroups(false)
-      // }
-      setGroups(["Doctors"])
-      setLoadingGroups(false)
+      try {
+        setLoadingGroups(true)
+        const { tokens } = await fetchAuthSession()
+        // tokens?.accessToken?.payload["cognito:groups"] or tokens?.idToken?.payload depending on your setup
+        const gs =
+          (tokens?.accessToken?.payload?.["cognito:groups"] as string[] | undefined) ??
+          (tokens?.idToken?.payload?.["cognito:groups"] as string[] | undefined) ??
+          []
+        if (alive) setGroups(gs)
+      } catch (err) {
+        console.error("Failed to fetch auth session:", err)
+        if (alive) setGroups([])
+      } finally {
+        if (alive) setLoadingGroups(false)
+      }
+      // setGroups(["Doctors"])
+      // setLoadingGroups(false)
     }
     loadGroups();
 
@@ -67,13 +67,12 @@ export default function Sidebar() {
   }, [])
 
   const items: NavItem[] = useMemo(() => {
-    const base: NavItem[] = [
-      { label: "Dashboard", href: "/", icon: <Home className="h-4 w-4" /> },
-      { label: "Perfil", href: "/profile", icon: <User className="h-4 w-4" /> },
-    ]
+    const base: NavItem[] = []
 
     if (groups.includes("Patients")) {
       base.push(
+        { label: "Dashboard", href: "/", icon: <Home className="h-4 w-4" /> },
+        { label: "Perfil", href: "/profile", icon: <User className="h-4 w-4" /> },
         { label: "Mis Citas", href: "/my-appointments", icon: <Calendar className="h-4 w-4" /> },
         { label: "Mis Recetas", href: "/my-recipes", icon: <FileText className="h-4 w-4" /> },
         { label: "Mis Consultas", href: "/my-consultations", icon: <Stethoscope className="h-4 w-4" /> }
@@ -82,20 +81,18 @@ export default function Sidebar() {
 
     if (groups.includes("Doctors")) {
       base.push(
+        { label: "Dashboard", href: "/", icon: <Home className="h-4 w-4" /> },
         { label: "Pacientes", href: "/patients", icon: <Users className="h-4 w-4" /> },
         { label: "Citas", href: "/appointments", icon: <Calendar className="h-4 w-4" /> },
-        { label: "Mis Citas", href: "/my-appointments", icon: <Calendar className="h-4 w-4" /> },
         { label: "Consultas", href: "/consultations", icon: <Stethoscope className="h-4 w-4" /> },
-        { label: "Mis Recetas", href: "/my-recipes", icon: <FileText className="h-4 w-4" /> },
-        { label: "Doctores", href: "/doctors", icon: <Users className="h-4 w-4" /> },
-        { label: "Especialidades", href: "/specialties", icon: <Stethoscope className="h-4 w-4" /> }
       )
     }
 
     if (groups.includes("Admins")) {
       base.push(
         { label: "Administración", href: "/admin", icon: <Settings className="h-4 w-4" /> },
-        { label: "Doctores", href: "/doctors", icon: <Users className="h-4 w-4" /> }
+        { label: "Doctores", href: "/doctors", icon: <Users className="h-4 w-4" /> },
+        { label: "Especialidades", href: "/specialties", icon: <Stethoscope className="h-4 w-4" /> }
       )
     }
 
