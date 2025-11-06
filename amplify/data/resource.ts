@@ -142,10 +142,8 @@ export const schema = a.schema({
       patientId: a.id().required(), // FK → Patient
       ...baseRecipe,
       consultation: a.belongsTo("Consultation", "consultationId"),
-      patient: a.belongsTo("Patient", "patientId"),
-      createdAt: a.datetime().required()
+      patient: a.belongsTo("Patient", "patientId")
     })
-    .identifier(["patientId", "createdAt"])
     .authorization((allow) => [
       allow.ownerDefinedIn("patientId").to(["read"]), // doctor
       allow.group("Doctors").to(["read", "create"]),

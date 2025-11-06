@@ -87,28 +87,24 @@ export default function PatientsPage() {
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
-    let alive = true
-    const load = async () => {
+    if (patients.length > 0) return;
+    const loadPatients = async () => {
       setLoading(true)
       try {
         // await setTimeout(() => {
         //   setPatients(patientsSample)
         // }, 500);
         const { data, errors } = await client.models.Patient.list({ selectionSet: ["id", "name", "cedula", "email", "birthdate", "gender", "bloodType", "background", "allergies"] })
-        if (!alive) return
         if (errors) console.error(errors)
         else setPatients(data ?? [])
       } catch (err) {
         console.error("Failed to load patients:", err)
         setPatients([])
       } finally {
-        if (alive) setLoading(false)
+        setLoading(false)
       }
     }
-    load()
-    return () => {
-      alive = false
-    }
+    loadPatients()
   }, [])
 
   const openRecord = (p: PatientRecord) => {

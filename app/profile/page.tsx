@@ -21,6 +21,8 @@ import { Badge } from "@/components/ui/badge"
 import { client } from "@/lib/amplifyClient"
 import { Nullable } from "@aws-amplify/data-schema"
 import { bloodTypeMap } from "@/lib/constants"
+import { fetchAuthSession } from "aws-amplify/auth"
+import { Schema } from "@/amplify/data/resource"
 
 /**
  * NOTE:
@@ -43,7 +45,6 @@ type EditableProfileValues = z.infer<typeof editableProfileSchema>
 
 /* ----------------- Profile type (shape returned by API) ----------------- */
 export type Profile = {
-  id?: string
   readonly gender: "Masculino" | "Femenino" | "Otro" | null
   readonly background: Nullable<string>
   readonly allergies: Nullable<string>[] | null
@@ -66,6 +67,8 @@ export const sampleInitial: Profile = {
   bloodType: "O_POSITIVO",
 }
 
+let patientId = "";
+
 /* ----------------- component ----------------- */
 export default function PatientProfilePage() {
   const [submitting, setSubmitting] = useState(false)
@@ -81,12 +84,17 @@ export default function PatientProfilePage() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        // const { data, errors } = await client.models.Patient.get({"id": "1"}, { selectionSet: ["cedula", "name", "email", "birthdate", "gender", "background", "allergies", "bloodType"]})
-        // if (errors) console.error(errors)
-        // else {
-          setTimeout(() => {
-            setProfile(sampleInitial)
-          }, 500);
+        const { tokens } = await fetchAuthSession();
+        const sub = tokens?.idToken?.payload["sub"] as string;
+        patientId = sub; 
+
+        if (!sub) return;
+        const { data, errors } = await client.models.Patient.get({"id": patientId}, { selectionSet: ["cedula", "name", "email", "birthdate", "gender", "background", "allergies", "bloodType"]})
+        if (errors) console.error(errors)
+        else setProfile(data)
+          // setTimeout(() => {
+          //   setProfile(sampleInitial)
+          // }, 500);
         // }
       } catch (err) {
         console.error("Failed to load profile:", err)
@@ -135,8 +143,8 @@ export default function PatientProfilePage() {
   const onSubmit = async (values: EditableProfileValues) => {
     setSubmitting(true)
     try {
-      const payload: any = {
-        id: profile!.id,
+      const payload: Schema["Patient"]["updateType"] = {
+        id: patientId,
         ...values,
       }
 
