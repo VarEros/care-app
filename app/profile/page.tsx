@@ -44,7 +44,7 @@ const editableProfileSchema = z.object({
 type EditableProfileValues = z.infer<typeof editableProfileSchema>
 
 /* ----------------- Profile type (shape returned by API) ----------------- */
-export type Profile = {
+type Profile = {
   readonly gender: "Masculino" | "Femenino" | "Otro" | null
   readonly background: Nullable<string>
   readonly allergies: Nullable<string>[] | null
@@ -53,18 +53,6 @@ export type Profile = {
   readonly email: string
   readonly birthdate: string
   readonly cedula: string
-}
-
-/* exported sample for dev/testing only (NOT used in logic) */
-export const sampleInitial: Profile = {
-  cedula: "0801199912345",
-  email: "paciente@ejemplo.com",
-  name: "Ana Morales",
-  birthdate: new Date("1990-05-12").toISOString(),
-  gender: "Masculino",
-  background: "Diabética tipo 2. Hipertensión controlada.",
-  allergies: ["Penicilina"],
-  bloodType: "O_POSITIVO",
 }
 
 let patientId = "";
