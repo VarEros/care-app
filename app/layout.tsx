@@ -32,7 +32,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
         <Authenticator formFields={formFields}>
-          {({ signOut, user }) => (
+          {({ user }) => (
             <>
               <Toaster />
               <div className="flex">

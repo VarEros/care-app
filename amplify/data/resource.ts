@@ -44,13 +44,14 @@ const baseRecipe = {
   dosageFormat: dosageFormats,
   frequency: a.integer().required(),
   frequencyType: frequencyTypes,
-  until: a.datetime().required(),
+  until: a.date().required(),
   notes: a.string(),
 }
 
 const baseConsultation = {
   doctorId: a.id().required(), // FK → Appointment
   appointmentScheduledOn: a.datetime().required(),
+  reason: a.string().required(),
   diagnosis: a.string().required(),
   treatment: a.string(),
   observations: a.string(),
@@ -127,7 +128,6 @@ export const schema = a.schema({
   Consultation: a
     .model({
       ...baseConsultation,
-      record: a.json(),
       appointment: a.belongsTo("Appointment", ["doctorId", "appointmentScheduledOn"]),
       recipes: a.hasMany("Recipe", "consultationId"), // relación con Recipe
     })

@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react"
 // shadcn/ui components
 import {
   Item,
+  ItemActions,
   ItemContent,
   ItemDescription,
   ItemTitle,
@@ -17,7 +18,7 @@ import { Appointment } from "./types"
 import { fetchAuthSession } from "aws-amplify/auth"
 
 export default function MyAppointmentsPage() {
-  let patientId = "";
+  const [patientId, setPatientId] = useState("")
   const [appointments, setAppointments] = useState<Array<Appointment>>([])
   const [loading, setLoading] = useState(true)
 
@@ -28,35 +29,13 @@ export default function MyAppointmentsPage() {
       try {
         const { tokens } = await fetchAuthSession();
         const sub = tokens?.idToken?.payload["sub"] as string;
-        patientId = sub; 
+        setPatientId(sub); 
 
         if (!sub) {
           setLoading(false);
           return;
         }
-        const { data, errors } = await client.models.Appointment.listAppointmentByPatientIdAndScheduledOn({ patientId: patientId }, { selectionSet: ["scheduledOn", "status", "doctor.name", "doctor.specialty"] } )
-        // setTimeout(() => {
-        //   const appointments = [
-        //     {
-        //       scheduledOn: "20 de Octubre, 2025 - 8:30PM",
-        //       status: "Aprobada" as any,
-        //       doctor: {
-        //         name: "Mario Lopez",
-        //         specialty: "Neurocirugia"
-        //       }
-        //     },
-        //     {
-        //       scheduledOn: "25 de Octubre, 2025 - 2:30PM",
-        //       status: "Aprobada" as any,
-        //       doctor: {
-        //         name: "Maria Gutierrez",
-        //         specialty: "Cardiologia"
-        //       }
-        //     }
-        //   ]
-        //   setAppointments(appointments)
-        //   setLoading(false)
-        // }, 500);
+        const { data, errors } = await client.models.Appointment.listAppointmentByPatientIdAndScheduledOn({ patientId: sub }, { selectionSet: ["scheduledOn", "status", "doctor.name", "doctor.specialty"] } )
         if (errors) console.error(errors)
         else setAppointments(data)
       } catch (err) {
@@ -99,9 +78,12 @@ export default function MyAppointmentsPage() {
                   <span className="text-muted-foreground hidden sm:block">especialista en {apt.doctor.specialty ?? "Medicina General"}</span>
                 </ItemTitle>
                 <ItemDescription>
-                  Agendada para {apt.scheduledOn}
+                  Agendada para {new Date(apt.scheduledOn).toLocaleString("es-ES", {dateStyle: "long",timeStyle: "short", hour12: true})}
                 </ItemDescription>
               </ItemContent>
+              <ItemActions>
+                {apt.status}
+              </ItemActions>
             </Item>
           ))}
         </ul>

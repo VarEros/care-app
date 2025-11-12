@@ -43,8 +43,9 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { toast } from "sonner"
-import { DoctorScheduleSheet } from "./components/sheet"
-import { doctorList, DoctorSchema } from "./types"
+import { DoctorScheduleSheet } from "./components/doctorSchedule"
+
+type DoctorSchema = Schema["Doctor"]["type"]
 
 const doctorSchema = z.object({
   name: z.string().min(2, "El nombre es requerido"),

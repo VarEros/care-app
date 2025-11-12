@@ -88,7 +88,7 @@ type ApprovedAppointment = {
     };
 }
 
-export default function AppointmentsPage() {
+export default function ConsultationsPage() {
   const [completedAppointments, setCompletedAppointments] = useState<Array<CompletedAppointment>>([])
   const [approvedAppointments, setApprovedAppointments] = useState<Array<ApprovedAppointment>>([])
   const [appointment, setAppointment] = useState<ApprovedAppointment | null>(null)
@@ -102,10 +102,10 @@ export default function AppointmentsPage() {
   const [openForm, setOpenForm] = useState(false)
   const [openAppointments, setOpenAppointments] = useState(false)
 
+  const [doctorId, setDoctorId] = useState("")
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
-  let doctorId: string = "";
   const now = new Date();
 
   // Setup form
@@ -123,41 +123,18 @@ export default function AppointmentsPage() {
 
   // Load patients on mount
   useEffect(() => {
+    if (completedAppointments.length !== 0) return;
     const loadAppointments = async () => {
       try {
         const { tokens }= await fetchAuthSession();
         const sub = tokens?.idToken?.payload["sub"] as string;
-        doctorId = sub; 
-
         if (!sub) {
           setLoading(false);
           return;
         }
+        setDoctorId(sub);
+
         const { data, errors } = await client.models.Appointment.list({filter: {doctorId: {eq: doctorId}, status: {eq: "Completada"}}, selectionSet: ["patientId", "scheduledOn", "reason", "patient.name", "patient.cedula"]})
-        // setTimeout(() => {
-        //   const appointments = [
-        //     {
-        //       patientId: "1",
-        //       scheduledOn: "20 de Octubre, 2025 - 8:30PM",
-        //       reason: "Migraña",
-        //       patient: {
-        //         name: "Mario Lopez",
-        //         cedula: "001-240504-1023S"
-        //       }
-        //     },
-        //     {
-        //       patientId: "2",
-        //       scheduledOn: "25 de Octubre, 2025 - 2:30PM",
-        //       reason: "Dolor de cabeza",
-        //       patient: {
-        //         name: "Maria Gutierrez",
-        //         cedula: "001-240504-1023S"
-        //       }
-        //     }
-        //   ]
-        //   setCompletedAppointments(appointments)
-        //   setLoading(false)
-        // }, 1000);
         if (errors) console.error(errors)
         else setCompletedAppointments(data)
       } catch (err) {
@@ -171,37 +148,9 @@ export default function AppointmentsPage() {
   }, [])
 
   useEffect(() => {
-    if (approvedAppointments.length !== 0) return;  
+    if (approvedAppointments.length !== 0 || openDialog == false) return;  
+    console.log("Doctor ID:", doctorId);
     const loadAprovedAppointments = async () => {
-      // setTimeout(() => {
-      //   const appointments = [
-      //     {
-      //       patientId: "1",
-      //       scheduledOn: "20 de Octubre, 2025 - 8:30PM",
-      //       patient: {
-      //         name: "Mario Lopez",
-      //         cedula: "001-240504-1023S"
-      //       }
-      //     },
-      //     {
-      //       patientId: "2",
-      //       scheduledOn: "25 de Octubre, 2025 - 2:30PM",
-      //       patient: {
-      //         name: "Maria Gutierrez",
-      //         cedula: "001-240504-1023S"
-      //       }
-      //     },
-      //     {
-      //       patientId: "5",
-      //       scheduledOn: "28 de Octubre, 2025 - 2:30PM",
-      //       patient: {
-      //         name: "Maria Gutierrez",
-      //         cedula: "001-240504-1023S"
-      //       }
-      //     }
-      //   ]
-      //   setApprovedAppointments(appointments)
-      // }, 2000);
       const { data, errors } = await client.models.Appointment.list({filter: {doctorId: {eq: doctorId}, status: { eq: "Aprobada"}}, selectionSet: ["patientId", "scheduledOn", "patient.name", "patient.cedula"]})
       if (errors) console.error(errors)
       else setApprovedAppointments(data)
@@ -215,19 +164,6 @@ export default function AppointmentsPage() {
       const { data, errors } = await client.models.Patient.get({id: appointment!.patientId}, {selectionSet: ["email", "birthdate", "gender", "bloodType", "background", "allergies"]})
       if (errors) console.error(errors)
       else setPatient({...data!, name: appointment!.patient.name, cedula: appointment!.patient.cedula, id: appointment!.patientId})
-  //     setTimeout(() => {
-  //       setPatient({
-  //   id: "1a2b3c4d",
-  //   name: "María López",
-  //   email: "maria.lopez@example.com",
-  //   birthdate: "1990-05-14",
-  //   gender: "Femenino",
-  //   cedula: "1234567890",
-  //   background: "Hipertensión controlada con medicación.",
-  //   allergies: ["Penicilina"],
-  //   bloodType: "A+",
-  // },)
-  //     }, 500);
     }
     loadExpedient()
   }, [appointment])
@@ -240,7 +176,8 @@ export default function AppointmentsPage() {
       const consultation: Schema["Consultation"]["createType"] = {
         ...values,
         doctorId: doctorId,
-        endedAt: values.endedAt ?? new Date().toISOString(),
+        endedAt: values.endedAt ? new Date(values.endedAt).toISOString() : new Date().toISOString(),
+        startedAt: new Date(values.startedAt).toISOString(),
         appointmentScheduledOn: appointment?.scheduledOn!,
       }
       
@@ -349,7 +286,7 @@ export default function AppointmentsPage() {
                                 setOpenAppointments(false)
                               }}
                             >
-                              {aa.patient.name} ({aa.patient.cedula}) - {aa.scheduledOn}
+                              {aa.patient.name} ({aa.patient.cedula}) - {new Date(aa.scheduledOn).toLocaleString("es-ES", {dateStyle: "long",timeStyle: "short", hour12: true})}
                               <Check
                                 className={cn(
                                   "ml-auto",

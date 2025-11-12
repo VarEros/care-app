@@ -36,7 +36,7 @@ export default function SpecialtiesPage() {
       setLoading(true)
       try {
         const { data, errors } = await client.models.Catalog.list({
-          filter: { type: { eq: "Especialidad" } },
+          filter: { type: { eq: "Especialidades" } },
           selectionSet: ["value"],
         })
         if (!alive) return

@@ -108,7 +108,6 @@ export const  CreateAppointmentDialog: React.FC<Props> = ({ setAppointments, pat
         const { data, errors } = await client.models.Catalog.list({ type: "Especialidades", selectionSet: ["value"]})
         if (errors) console.error(errors)
         else setSpecialties(data.map(catalog => catalog.value))
-        // setTimeout(() => {
         //   setSpecialties(["Neurologia", "Ojontologo"])
         //   if (selectedDoctor){
         //     form.setValue("specialty", selectedDoctor!.specialty)
@@ -121,7 +120,6 @@ export const  CreateAppointmentDialog: React.FC<Props> = ({ setAppointments, pat
     
     const loadDoctors = async () => {
       try {
-        // setTimeout(() => {
         //   const doctors = doctorList as Doctor[];
         //   setDoctors(doctors);
         //   // setLoading(false);
@@ -146,7 +144,7 @@ export const  CreateAppointmentDialog: React.FC<Props> = ({ setAppointments, pat
       try {
         const { data, errors } = await client.models.Appointment.list({ doctorId: selectedDoctorId, scheduledOn: { beginsWith: dayOfDate}, selectionSet: ["scheduledOn"]})
         if (errors) console.error(errors)
-        else setTakenTimes(data.map(apt => apt.scheduledOn))
+        else setTakenTimes(data.map(apt => new Date(apt.scheduledOn).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })))
       //   await setTimeout(() => {
       //     setTakenTimes(["09:00", "09:20", "10:40", "11:00", "11:40", "14:40", "15:40", "16:00" , "16:40"])
       //     setLoadingAppointments(false)
@@ -160,11 +158,13 @@ export const  CreateAppointmentDialog: React.FC<Props> = ({ setAppointments, pat
     }
     loadAppointments()
   }, [selectedDateIso])
+  
 
   // compute available weekday keys from selected doctor's businessHours
   const availableWeekdays = useMemo(() => {
     if (!selectedDoctor?.businessHours) return []
-    return Object.keys(selectedDoctor.businessHours)
+    const businessHours = JSON.parse(selectedDoctor.businessHours)
+    return Object.keys(businessHours).filter((key) => businessHours[key].enabled);
   }, [selectedDoctor])
 
   // calendar day enabled by businessHours of selected doctor
@@ -180,9 +180,10 @@ export const  CreateAppointmentDialog: React.FC<Props> = ({ setAppointments, pat
   const dayBusinessHoursDescription = useMemo(() => {
     if (!selectedDateIso) return ""
 
+    const businessHours = JSON.parse(selectedDoctor!.businessHours)
     const dayLabel = dayLabels[selectedWeekday!]
-    const startTime = convertTo12Hour(selectedDoctor!.businessHours![selectedWeekday!].start)
-    const endTime = convertTo12Hour(selectedDoctor!.businessHours![selectedWeekday!].end)
+    const startTime = convertTo12Hour(businessHours[selectedWeekday!].start)
+    const endTime = convertTo12Hour(businessHours[selectedWeekday!].end)
     console.log("dateISO: " + selectedDateIso)
 
     return `El Dr.${selectedDoctor!.name} atiende los ${dayLabel} desde las ${startTime} hasta las ${endTime}`
@@ -220,17 +221,18 @@ export const  CreateAppointmentDialog: React.FC<Props> = ({ setAppointments, pat
   const onSubmit = async (values: AppointmentFormValues) => {
     setSubmitting(true)
     try {
-      const { data, errors } = await client.models.Appointment.create(getPayload(values), {selectionSet: ["scheduledOn", "status", "doctor.name", "doctor.specialty"]})
+      const { data, errors } = await client.models.Appointment.create(getPayload(values), {selectionSet: ["scheduledOn"]})
       if (errors) {
         console.error("Error creating appointment:", errors)
         toast.error("Error al crear al appointment", {
           description: errors[0]["message"]
         })
       } else if (data) {
-        if (setAppointments) setAppointments!((prev) => [...prev, data])
+        const newAppointment: Appointment = {...data, status: "Registrada", doctor: { name: selectedDoctor!.name, specialty: selectedSpecialty}}
+        if (setAppointments) setAppointments!((prev) => [...prev, newAppointment])
         setOpen(false)
         toast.success("Cita creada con exito", {
-          description: values.doctorId + " ya puede ingresar al sistema."
+          description: "Espere a que la cita sea aprobada por el doctor"
         })
         form.reset()
       }
@@ -248,6 +250,7 @@ export const  CreateAppointmentDialog: React.FC<Props> = ({ setAppointments, pat
       type: values.type as any,
       doctorId: values.doctorId,
       patientId,
+      status: "Registrada",
       scheduledOn: new Date(
         new Date(values.dateScheduled).toDateString() + " " + values.timeScheduled 
       ).toISOString(),

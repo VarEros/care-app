@@ -68,7 +68,7 @@ export function RecipesForm({ recipes, setRecipes }: RecipesFormProps) {
         dosageFormat: "mg",
         frequency: 1,
         frequencyType: "Dias",
-        until: undefined,
+        until: "",
         notes: "",
         },
     })
@@ -95,8 +95,10 @@ export function RecipesForm({ recipes, setRecipes }: RecipesFormProps) {
 
         <PopoverContent className="w-full p-4">
             <Form {...form}>
-            <form
-                onSubmit={form.handleSubmit(onSubmit)}
+            <form onSubmit={(e) => {
+                    e.stopPropagation();
+                    form.handleSubmit(onSubmit)(e)
+                }}
                 className="grid grid-cols-2 gap-4"
             >
                 <FormField
@@ -239,7 +241,7 @@ export function RecipesForm({ recipes, setRecipes }: RecipesFormProps) {
                 {recipe.dosage} {recipe.dosageFormat} cada {recipe.frequency}{" "}
                 {recipe.frequencyType}
                 <br />
-                Hasta {format(recipe.until, "PPP")}
+                Hasta {new Date(recipe.until).toLocaleString("es-ES", {dateStyle: "long"})}
                 </ItemDescription>
             </ItemContent>
             <ItemActions>

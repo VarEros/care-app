@@ -42,7 +42,7 @@ type Appointment = {
 }
 
 export default function AppointmentsPage() {
-  let doctorId = ""
+  const [doctorId, setDoctorId] = useState("")
   const [appointments, setAppointments] = useState<Array<Appointment>>([])
   const [active, setActive] = useState<Appointment | null>(null)
   const [loading, setLoading] = useState(true)
@@ -55,12 +55,12 @@ export default function AppointmentsPage() {
       try {
         const { tokens } = await fetchAuthSession()
         const sub = tokens?.idToken?.payload["sub"] as string
-        doctorId = sub
 
         if (!sub) {
           setLoading(false)
           return
         }
+        setDoctorId(sub)
 
         const { data, errors } = await client.models.Appointment.list({
           doctorId,
@@ -159,18 +159,19 @@ export default function AppointmentsPage() {
             <Item variant="outline" key={apt.scheduledOn}>
               <ItemContent>
                 <ItemTitle>
-                  Cita con {apt.patient.name}{" - "}
-                  <span className="text-muted-foreground hidden sm:block">{apt.patient.cedula}</span>
+                  Cita con {apt.patient.name}{" -"}
+                  <span className="text-muted-foreground hidden sm:block">Por {apt.motive}</span>
                 </ItemTitle>
                 <ItemDescription>
-                  Agendada para {apt.scheduledOn}, por el motivo: {apt.motive ?? "—"}
+                  <span className="text-foreground">{apt.status}  </span>
+                   para {new Date(apt.scheduledOn).toLocaleString("es-ES", {dateStyle: "long",timeStyle: "short", hour12: true})}
                 </ItemDescription>
-                <ItemActions>
-                  <Button size="sm" onClick={() => handleViewDetails(apt.scheduledOn)}>
-                    Ver detalles
-                  </Button>
-                </ItemActions>
               </ItemContent>
+              <ItemActions>
+                <Button size="sm" onClick={() => handleViewDetails(apt.scheduledOn)}>
+                  Ver detalles
+                </Button>
+              </ItemActions>
             </Item>
           ))}
         </ul>
@@ -182,12 +183,12 @@ export default function AppointmentsPage() {
           <DialogHeader>
             <DialogTitle>Detalles de la cita</DialogTitle>
             <DialogDescription>
-              Información de la cita seleccionada. Desde aquí puedes cambiar su estado.
+              Información detallada de la cita.
             </DialogDescription>
           </DialogHeader>
 
           {active ? (
-            <div className="space-y-4 py-2">
+            <div className="space-y-4 pt-2">
               <div>
                 <p className="text-xs text-muted-foreground">Paciente</p>
                 <p className="font-medium">{active.patient.name}</p>
@@ -196,7 +197,7 @@ export default function AppointmentsPage() {
 
               <div>
                 <p className="text-xs text-muted-foreground">Fecha</p>
-                <p className="font-medium">{active.scheduledOn}</p>
+                <p className="font-medium">{new Date(active.scheduledOn).toLocaleString("es-ES", {dateStyle: "long",timeStyle: "short", hour12: true})}</p>
               </div>
 
               <div>
@@ -209,71 +210,42 @@ export default function AppointmentsPage() {
                 <p className="font-medium">{active.status ?? "—"}</p>
               </div>
 
-              <Separator />
-
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex gap-2 flex-wrap">
-                  <Button variant="outline" onClick={() => setActive(null)} disabled={submitting}>
-                    Volver
+              <DialogFooter className="flex items-center justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => handleUpdateAppointment(active.scheduledOn, "Cancelada")}
+                    disabled={submitting}
+                  >
+                    {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    Cancelar
                   </Button>
 
                   {active.status === "Registrada" && (
-                    <>
-                      <Button
-                        onClick={() => handleUpdateAppointment(active.scheduledOn, "Aprobada")}
-                        disabled={submitting}
-                      >
-                        {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                        Aprobar
-                      </Button>
-
-                      <Button
-                        variant="destructive"
-                        onClick={() => handleUpdateAppointment(active.scheduledOn, "Cancelada")}
-                        disabled={submitting}
-                      >
-                        {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                        Cancelar
-                      </Button>
-                    </>
+                    <Button
+                      onClick={() => handleUpdateAppointment(active.scheduledOn, "Aprobada")}
+                      disabled={submitting}
+                    >
+                      {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                      Aprobar
+                    </Button>
                   )}
 
                   {active.status === "Aprobada" && (
-                    <>
-                      <Button
-                        onClick={() => handleUpdateAppointment(active.scheduledOn, "Completada")}
-                        disabled={submitting}
-                      >
-                        {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                        Marcar como completada
-                      </Button>
-
-                      <Button
-                        variant="destructive"
-                        onClick={() => handleUpdateAppointment(active.scheduledOn, "Cancelada")}
-                        disabled={submitting}
-                      >
-                        {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                        Cancelar
-                      </Button>
-                    </>
+                    <Button
+                      onClick={() => handleUpdateAppointment(active.scheduledOn, "Completada")}
+                      disabled={submitting}
+                    >
+                      {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                      Marcar como completada
+                    </Button>
                   )}
-
-                  {(active.status === "Completada" || active.status === "Cancelada") && (
-                    <p className="text-sm text-muted-foreground self-center">
-                      No hay acciones disponibles
-                    </p>
-                  )}
-                </div>
-              </div>
+              </DialogFooter>
             </div>
           ) : (
             <div className="py-8 text-center">
               <Loader2 className="h-6 w-6 animate-spin mx-auto" />
             </div>
           )}
-
-          <DialogFooter />
         </DialogContent>
       </Dialog>
     </div>

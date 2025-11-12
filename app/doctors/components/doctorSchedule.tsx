@@ -16,11 +16,19 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { client } from "@/lib/amplifyClient"
 import { toast } from "sonner"
-import { BusinessHoursData, BusinessHoursForm, DoctorSchema } from "../types"
-import { dataToForm } from "../helpers/businessHours"
 import { dayLabels } from "@/lib/constants"
+import { Schema } from "@/amplify/data/resource"
 
-const defaultHours: BusinessHoursForm = {
+type DoctorSchema = Schema["Doctor"]["type"]
+type BusinessHours = {
+  [key: string]: {
+    enabled: boolean
+    start: string
+    end: string
+  }
+}
+
+const defaultHours: BusinessHours = {
   monday: { enabled: true, start: "09:00", end: "17:00" },
   tuesday: { enabled: true, start: "09:00", end: "17:00" },
   wednesday: { enabled: true, start: "09:00", end: "17:00" },
@@ -39,7 +47,7 @@ export function DoctorScheduleSheet({
   setOpenSheet: (open: boolean) => void
   doctor: DoctorSchema
 }) {
-  const [hours, setHours] = useState<BusinessHoursForm>(defaultHours)
+  const [hours, setHours] = useState<BusinessHours>(defaultHours)
   const [saving, setSaving] = useState(false)
 
   const handleToggleDay = (day: string) => {
@@ -85,7 +93,7 @@ export function DoctorScheduleSheet({
 
   useEffect(() => {
     if(!doctor || !doctor.businessHours) return;
-    setHours(dataToForm(doctor.businessHours as BusinessHoursData))
+    setHours(JSON.parse(doctor.businessHours as string) as BusinessHours)
   }, [doctor])
   
   return (

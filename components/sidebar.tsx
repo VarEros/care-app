@@ -7,6 +7,7 @@ import { fetchAuthSession, signOut as amplifySignOut } from "aws-amplify/auth"//
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Home, User, Calendar, Users, Settings, FileText, LogOut, Stethoscope, Circle } from "lucide-react"
+import { client } from "@/lib/amplifyClient"
 
 /**
  * Small helper to join classes
@@ -32,9 +33,16 @@ type NavItem = {
  *
  * NOTE: adjust imports for `fetchAuthSession` and `amplifySignOut` to match your project.
  */
+
+type UserProfile = {
+  name: string;
+  subtitle: string;
+}
+
 export default function Sidebar() {
   const [groups, setGroups] = useState<string[]>([])
   const [loadingGroups, setLoadingGroups] = useState(true)
+  const [profile, setProfile] = useState<UserProfile | null>(null)
   const pathname = usePathname()
 
   useEffect(() => {
@@ -49,7 +57,13 @@ export default function Sidebar() {
           (tokens?.accessToken?.payload?.["cognito:groups"] as string[] | undefined) ??
           (tokens?.idToken?.payload?.["cognito:groups"] as string[] | undefined) ??
           []
-        if (alive) setGroups(gs)
+        
+        const name = tokens?.idToken?.payload["name"] as string;
+        const email = tokens?.idToken?.payload["email"] as string;
+        if (alive) {
+          setGroups(gs)
+          setProfile({ name: name, subtitle: email })
+        }
       } catch (err) {
         console.error("Failed to fetch auth session:", err)
         if (alive) setGroups([])
@@ -117,8 +131,8 @@ export default function Sidebar() {
 
         </Circle>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold truncate">Dr. Juan Pérez</p>
-          <p className="text-xs text-muted-foreground truncate">Cardiología</p>
+          <p className="text-sm font-semibold truncate">{profile ? profile.name : "Usuario"}</p>
+          <p className="text-xs text-muted-foreground truncate">{profile ? profile.subtitle : "Cargando..."}</p>
         </div>
       </div>
 
