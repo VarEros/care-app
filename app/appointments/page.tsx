@@ -22,7 +22,6 @@ import { toast } from "sonner"
 import { fetchAuthSession } from "aws-amplify/auth"
 import { Nullable } from "@aws-amplify/data-schema"
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
 import {
   Select,
   SelectTrigger,

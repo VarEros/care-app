@@ -58,27 +58,6 @@ export default function RootLayout({
 
                 {/* Main content area */}
                 <div className="flex-1 overflow-auto h-screen">
-                  <header className="flex items-center justify-between p-4 border-b">
-                    <div className="flex items-center gap-3">
-                      {/* Mobile: show menu button to open sidebar */}
-                      <div className="lg:hidden">
-                        {/* Button that triggers the same Sheet used above */}
-                        <Sheet>
-                          <SheetTrigger asChild>
-                            <Button variant="ghost" className="p-2">
-                              <Menu className="h-5 w-5" />
-                            </Button>
-                          </SheetTrigger>
-
-                          <SheetContent side="left" className="w-72 lg:hidden p-0">
-                            <Sidebar />
-                          </SheetContent>
-                        </Sheet>
-                      </div>
-
-                      <span className="text-base">Bienvenido, {user?.signInDetails?.loginId}</span>
-                    </div>
-                  </header>
 
                   <main className="p-6">{children}</main>
                 </div>

@@ -3,12 +3,10 @@
 import React, { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { fetchAuthSession, signOut as amplifySignOut } from "aws-amplify/auth"// adjust to your auth utilities
+import { fetchAuthSession, signOut } from "aws-amplify/auth"// adjust to your auth utilities
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Home, User, Calendar, Users, Settings, FileText, LogOut, Stethoscope, Circle } from "lucide-react"
-import { client } from "@/lib/amplifyClient"
-
 /**
  * Small helper to join classes
  */
@@ -88,8 +86,7 @@ export default function Sidebar() {
         { label: "Dashboard", href: "/", icon: <Home className="h-4 w-4" /> },
         { label: "Perfil", href: "/profile", icon: <User className="h-4 w-4" /> },
         { label: "Mis Citas", href: "/my-appointments", icon: <Calendar className="h-4 w-4" /> },
-        { label: "Mis Recetas", href: "/my-recipes", icon: <FileText className="h-4 w-4" /> },
-        { label: "Mis Consultas", href: "/my-consultations", icon: <Stethoscope className="h-4 w-4" /> }
+        { label: "Mis Recetas", href: "/my-recipes", icon: <FileText className="h-4 w-4" /> }
       )
     }
 
@@ -115,9 +112,9 @@ export default function Sidebar() {
 
   const handleSignOut = async () => {
     try {
-      await amplifySignOut()
+      await signOut()
       // Optionally redirect to login page or refresh
-      // window.location.href = "/login"
+      window.location.href = "/"
     } catch (err) {
       console.error("Sign out failed", err)
     }

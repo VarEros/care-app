@@ -8,7 +8,6 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { CalendarIcon, Check, ChevronsUpDown, Loader2, Plus, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Nullable } from "@aws-amplify/data-schema"
 
 // shadcn/ui components
 import {
@@ -58,6 +57,7 @@ import BiometricDrawer from "./components/biometricDrawer"
 import { Biometric } from "./type"
 import { PatientSheet } from "@/components/patientSheet"
 import { PatientRecord } from "@/lib/types"
+import ConsultationModal from "./components/consultationModal"
 
 const consultationSchema = z.object({
   reason: z.string().nonempty("La razon de la cita es requerida"),
@@ -70,13 +70,17 @@ const consultationSchema = z.object({
 
 type ConsultationFormValues = z.infer<typeof consultationSchema>;
 type CompletedAppointment = {
-    readonly patientId: string;
-    readonly reason: Nullable<string>;
-    readonly scheduledOn: string;
-    readonly patient: {
-        readonly name: string;
-        readonly cedula: string;
-    };
+  readonly doctorId: string;
+  readonly patientId: string;
+  readonly patient: {
+      readonly name: string;
+      readonly cedula: string;
+  };
+  readonly consultation: {
+      readonly id: string;
+      readonly reason: string;
+      readonly startedAt: string;
+  };
 };
 
 type ApprovedAppointment = {
@@ -95,6 +99,9 @@ export default function ConsultationsPage() {
   const [recipes, setRecipes] = useState<RecipeFormValues[]>([])
   const [biometric, setBiometric] = useState<Biometric | null>(null)
   const [patient, setPatient] = useState<PatientRecord | null>(null)
+  
+  const [openConsultation, setOpenConsultation] = useState(false)
+  const [consultationId, setConsultationId] = useState<string>("")
 
   const [openDialog, setOpenDialog] = useState(false)
   const [openBiometric, setOpenBiometric] = useState(false)
@@ -134,7 +141,7 @@ export default function ConsultationsPage() {
         }
         setDoctorId(sub);
 
-        const { data, errors } = await client.models.Appointment.list({filter: {doctorId: {eq: doctorId}, status: {eq: "Completada"}}, selectionSet: ["patientId", "scheduledOn", "reason", "patient.name", "patient.cedula"]})
+        const { data, errors } = await client.models.Appointment.list({doctorId, filter: {status: {eq: "Completada"}}, selectionSet: ["consultation.id", "patientId", "doctorId", "consultation.reason", "consultation.startedAt", "patient.name", "patient.cedula"]})
         if (errors) console.error(errors)
         else setCompletedAppointments(data)
       } catch (err) {
@@ -151,7 +158,7 @@ export default function ConsultationsPage() {
     if (approvedAppointments.length !== 0 || openDialog == false) return;  
     console.log("Doctor ID:", doctorId);
     const loadAprovedAppointments = async () => {
-      const { data, errors } = await client.models.Appointment.list({filter: {doctorId: {eq: doctorId}, status: { eq: "Aprobada"}}, selectionSet: ["patientId", "scheduledOn", "patient.name", "patient.cedula"]})
+      const { data, errors } = await client.models.Appointment.list({doctorId, filter: {status: { eq: "Aprobada"}}, selectionSet: ["patientId", "scheduledOn", "patient.name", "patient.cedula"]})
       if (errors) console.error(errors)
       else setApprovedAppointments(data)
     }
@@ -168,6 +175,10 @@ export default function ConsultationsPage() {
     loadExpedient()
   }, [appointment])
 
+  const handleViewDetails = (consultationId: string) => {
+    setConsultationId(consultationId);
+    setOpenConsultation(true);
+  }
 
   // Handle appointment creation
   const onSubmit = async (values: ConsultationFormValues) => {
@@ -178,7 +189,7 @@ export default function ConsultationsPage() {
         doctorId: doctorId,
         endedAt: values.endedAt ? new Date(values.endedAt).toISOString() : new Date().toISOString(),
         startedAt: new Date(values.startedAt).toISOString(),
-        appointmentScheduledOn: appointment?.scheduledOn!,
+        scheduledOn: appointment?.scheduledOn!,
       }
       
       let payload: Schema["createCompleteConsultation"]["args"] = {consultation}
@@ -191,7 +202,7 @@ export default function ConsultationsPage() {
         const biometricPayload: Schema["Biometric"]["createType"] = {
           ...biometric,
           patientId: appointment!.patientId,
-          validatedOn: consultation.startedAt
+          createdAt: consultation.startedAt,
         }
         payload.biometric = biometricPayload
       }
@@ -206,7 +217,12 @@ export default function ConsultationsPage() {
       } else if (data) {
         const completedAppointment: CompletedAppointment = {
           ...appointment!,
-          reason: values.reason,
+          consultation: {
+            id: data,
+            reason: consultation.reason,
+            startedAt: consultation.startedAt
+          },
+          doctorId: doctorId
         }
         setCompletedAppointments((prev) => [...prev, completedAppointment])
         setOpenDialog(false)
@@ -239,7 +255,8 @@ export default function ConsultationsPage() {
         {/* Dialog for adding new Cita */}
         <Dialog open={openDialog} onOpenChange={setOpenDialog} >
         <BiometricDrawer open={openBiometric} onOpenChange={setOpenBiometric} setBiometric={setBiometric}/>
-        <PatientSheet open={openExpedient} setOpen={setOpenExpedient} patient={patient}/>
+        <PatientSheet open={openExpedient} setOpen={setOpenExpedient} patient={patient}/>      
+        <ConsultationModal open={openConsultation} onOpenChange={setOpenConsultation} consultationId={consultationId}/>
           <DialogTrigger asChild>
             <Button className="w-[200px]">Realizar Consulta</Button>
           </DialogTrigger>
@@ -453,7 +470,7 @@ export default function ConsultationsPage() {
         ) : (
             <ul className="space-y-2">
             {completedAppointments.map((apt) => (
-                <Item key={apt.scheduledOn} variant="outline">
+                <Item key={apt.consultation.startedAt} variant="outline">
                 <ItemContent>
                     <ItemTitle>
                     <span className="text-muted-foreground hidden md:block">
@@ -461,15 +478,15 @@ export default function ConsultationsPage() {
                     </span>
                     {apt.patient.name} / {apt.patient.cedula}
                     <span className="text-muted-foreground hidden xs:block">
-                        {apt.reason}
+                        Por {apt.consultation.reason}
                     </span>
                     </ItemTitle>
                     <ItemDescription>
-                      Realizada el {apt.scheduledOn}
+                      Realizada el {new Date(apt.consultation.startedAt).toLocaleString("es-ES", {dateStyle: "long",timeStyle: "short", hour12: true})}
                     </ItemDescription>
                 </ItemContent>
                 <ItemActions className="hidden sm:block">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => handleViewDetails(apt.consultation.id)}>
                     Ver Detalles
                     </Button>
                 </ItemActions>

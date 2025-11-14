@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 import { PatientRecord } from "@/lib/types"
+import { client } from "@/lib/amplifyClient"
+import { Nullable } from "@aws-amplify/data-schema"
 
 interface PatientSheetProps {
   open: boolean
@@ -12,7 +13,32 @@ interface PatientSheetProps {
   patient: PatientRecord | null
 }
 
+type Biometric = {
+    readonly createdAt: string;
+    readonly weight: Nullable<number>;
+    readonly height: Nullable<number>;
+    readonly temperature: Nullable<number>;
+    readonly heartRate: Nullable<number>;
+    readonly diastolicPressure: Nullable<number>;
+    readonly systolicPressure: Nullable<number>;
+};
+
 export function PatientSheet({ open, setOpen, patient }: PatientSheetProps) {
+  const [biometric, setBiometric] = useState<Biometric | null>(null)
+  useEffect(() => {
+    if (!patient) return
+    const loadBiometric = async () => {
+      try {
+        const { data, errors } = await client.models.Biometric.list({patientId: patient.id ,limit: 1, sortDirection: "DESC", selectionSet: ["height", "weight", "temperature", "heartRate", "systolicPressure", "diastolicPressure", "createdAt"]})
+        if (errors) console.error("Failed to load biometric data:", errors)
+        else if (data.length) setBiometric(data[0])
+      } catch (err) {
+        console.error("Failed to load biometric data:", err)
+      }
+    }
+    loadBiometric()
+  }, [patient])
+  
   return (
     <Sheet
       open={open}
@@ -83,7 +109,67 @@ export function PatientSheet({ open, setOpen, patient }: PatientSheetProps) {
                 {patient.background ?? "—"}
               </p>
             </div>
+
+            {/* Biometric Data */}
+            {biometric ? (
+              <div className="border-t pt-4">
+                <p className="text-sm font-semibold mb-2">Signos Vitales</p>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Peso</p>
+                    <p className="font-medium">
+                      {biometric.weight ? `${biometric.weight} kg` : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Altura</p>
+                    <p className="font-medium">
+                      {biometric.height ? `${biometric.height} cm` : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Temperatura</p>
+                    <p className="font-medium">
+                      {biometric.temperature ? `${biometric.temperature} °C` : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Ritmo cardiaco</p>
+                    <p className="font-medium">
+                      {biometric.heartRate ? `${biometric.heartRate} bpm` : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Presión diastólica</p>
+                    <p className="font-medium">
+                      {biometric.diastolicPressure
+                        ? `${biometric.diastolicPressure} mmHg`
+                        : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Presión sistólica</p>
+                    <p className="font-medium">
+                      {biometric.systolicPressure
+                        ? `${biometric.systolicPressure} mmHg`
+                        : "—"}
+                    </p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-muted-foreground mt-2">
+                  Medido el:{" "}
+                  {new Date(biometric.createdAt).toLocaleString("es-ES")}
+                </p>
+              </div>
+            ) : (
+              <div className="border-t pt-4 text-sm text-muted-foreground">
+                No hay datos biométricos recientes.
+              </div>
+            )}
           </div>
+
         ) : (
           <div className="py-12 text-center">
             <Loader2 className="h-6 w-6 animate-spin mx-auto" />

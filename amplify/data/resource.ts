@@ -29,13 +29,13 @@ const baseDoctor = {
 
 const baseBiometric = {
   patientId: a.id().required(),
-  validatedOn: a.datetime().required(),
   weight: a.integer(),
   height: a.integer(),
   temperature: a.integer(),
   heartRate: a.integer(),
   diastolicPressure: a.integer(),
   systolicPressure: a.integer(),
+  createdAt: a.datetime().required(),
 }
 
 const baseRecipe = {
@@ -50,7 +50,7 @@ const baseRecipe = {
 
 const baseConsultation = {
   doctorId: a.id().required(), // FK → Appointment
-  appointmentScheduledOn: a.datetime().required(),
+  scheduledOn: a.datetime().required(),
   reason: a.string().required(),
   diagnosis: a.string().required(),
   treatment: a.string(),
@@ -98,6 +98,7 @@ export const schema = a.schema({
       ...baseBiometric,
       patient: a.belongsTo("Patient", "patientId"),
     })
+    .identifier(["patientId", "createdAt"])
     .authorization((allow) => [
       allow.ownerDefinedIn("patientId").to(["read"]), // patient
       allow.group("Doctors").to(["read", "create"])
@@ -110,11 +111,10 @@ export const schema = a.schema({
       scheduledOn: a.datetime().required(),
       type: appointmentTypes,
       motive: a.string(),
-      reason: a.string().authorization((allow) => allow.group("Patients").to(["read"])),
       status: appointmentStatuses,
       doctor: a.belongsTo("Doctor", "doctorId"),
       patient: a.belongsTo("Patient", "patientId"),
-      consultation: a.hasOne("Consultation", ["doctorId", "appointmentScheduledOn"]),
+      consultation: a.hasOne("Consultation", ["doctorId", "scheduledOn"]),
     })
     .identifier(["doctorId", "scheduledOn"])
     .secondaryIndexes((index) => [
@@ -128,12 +128,12 @@ export const schema = a.schema({
   Consultation: a
     .model({
       ...baseConsultation,
-      appointment: a.belongsTo("Appointment", ["doctorId", "appointmentScheduledOn"]),
+      appointment: a.belongsTo("Appointment", ["doctorId", "scheduledOn"]),
       recipes: a.hasMany("Recipe", "consultationId"), // relación con Recipe
     })
     .authorization((allow) => [
       allow.group("Patients").to(["read"]),
-      allow.ownerDefinedIn("doctorId").to(["read", "create"]) // doctor
+      allow.group("Doctors").to(["read", "create"]),
     ]),
 
   Recipe: a
@@ -168,7 +168,7 @@ export const schema = a.schema({
         recipes: a.ref("BaseRecipe").array(),
         biometric: a.ref("BaseBiometric"),
       })
-      .returns(a.ref("Appointment")) // return the created consultation
+      .returns(a.id()) // return the created consultation ID
       .authorization((allow) => [
         allow.group("Doctors"),
       ])

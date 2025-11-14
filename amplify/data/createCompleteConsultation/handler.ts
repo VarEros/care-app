@@ -1,6 +1,13 @@
 import { data } from "../resource"; // Adjust path to your backend data export
+import { Amplify } from 'aws-amplify';
 import type { Schema } from "../resource";
+import { getAmplifyDataClientConfig } from '@aws-amplify/backend/function/runtime';
 import { generateClient } from 'aws-amplify/data';
+import { env } from '$amplify/env/create-complete-consultation'; // replace with your function name
+
+const { resourceConfig, libraryOptions } = await getAmplifyDataClientConfig(env);
+
+Amplify.configure(resourceConfig, libraryOptions);
 
 const schemaClient = generateClient<Schema>();
 type Handler = Schema["createCompleteConsultation"]["functionHandler"]
@@ -22,7 +29,7 @@ export const handler: Handler = async (event) => {
 
       const appointmentResponse = await schemaClient.models.Appointment.update({
           doctorId: consultation.doctorId, 
-          scheduledOn: consultation.appointmentScheduledOn,
+          scheduledOn: consultation.scheduledOn,
           status: "Completada"
       })
 
@@ -41,7 +48,7 @@ export const handler: Handler = async (event) => {
       if (biometric) {
         await schemaClient.models.Biometric.create(biometric!)
       }
-      return appointmentResponse.data;
+      return consultationResponse.data!.id;
       
     } catch (err) {
       console.error("createConsultationWithRecipes failed:", err);
