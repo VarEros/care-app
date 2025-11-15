@@ -210,14 +210,16 @@ export default function AppointmentsPage() {
               </div>
 
               <DialogFooter className="flex items-center justify-end gap-2">
+                {active.status !== "Cancelada" && (
                   <Button
                     variant="outline"
                     onClick={() => handleUpdateAppointment(active.scheduledOn, "Cancelada")}
                     disabled={submitting}
                   >
                     {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                    Cancelar
+                    Cancelar Cita
                   </Button>
+                  )}
 
                   {active.status === "Registrada" && (
                     <Button
@@ -225,17 +227,7 @@ export default function AppointmentsPage() {
                       disabled={submitting}
                     >
                       {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                      Aprobar
-                    </Button>
-                  )}
-
-                  {active.status === "Aprobada" && (
-                    <Button
-                      onClick={() => handleUpdateAppointment(active.scheduledOn, "Completada")}
-                      disabled={submitting}
-                    >
-                      {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                      Marcar como completada
+                      Aprobar Cita
                     </Button>
                   )}
               </DialogFooter>

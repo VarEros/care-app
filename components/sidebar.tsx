@@ -37,6 +37,12 @@ type UserProfile = {
   subtitle: string;
 }
 
+const groupLabels: Record<string, string> = {
+  Patients: "Paciente",
+  Doctors: "Doctor",
+  Admins: "Administrador"
+}
+
 export default function Sidebar() {
   const [groups, setGroups] = useState<string[]>([])
   const [loadingGroups, setLoadingGroups] = useState(true)
@@ -84,9 +90,9 @@ export default function Sidebar() {
     if (groups.includes("Patients")) {
       base.push(
         { label: "Dashboard", href: "/", icon: <Home className="h-4 w-4" /> },
-        { label: "Perfil", href: "/profile", icon: <User className="h-4 w-4" /> },
         { label: "Mis Citas", href: "/my-appointments", icon: <Calendar className="h-4 w-4" /> },
-        { label: "Mis Recetas", href: "/my-recipes", icon: <FileText className="h-4 w-4" /> }
+        { label: "Mis Recetas", href: "/my-recipes", icon: <FileText className="h-4 w-4" /> },
+        { label: "Mis Examenes", href: "/my-exams", icon: <FileText className="h-4 w-4" /> }
       )
     }
 
@@ -198,7 +204,7 @@ export default function Sidebar() {
           <div className="text-sm">
             <p className="font-medium">Rol</p>
             <p className="text-xs text-muted-foreground">
-              {groups.length ? groups.join(", ") : "No roles"}
+              {groups.length ? groupLabels[groups[0]] : "No roles"}
             </p>
           </div>
 

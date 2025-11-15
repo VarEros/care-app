@@ -1,7 +1,7 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
-import { format } from "date-fns"
+import React, { useEffect, useMemo, useState } from "react"
+import { endOfDay, format } from "date-fns"
 import { es } from "date-fns/locale"
 import {
   Card,
@@ -28,6 +28,7 @@ import {
 import { client } from "@/lib/amplifyClient"
 import { fetchAuthSession } from "aws-amplify/auth"
 import { Nullable } from "@aws-amplify/data-schema"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 /* ----- Types ----- */
 
@@ -109,68 +110,147 @@ export default function MyRecipesPage() {
     loadRecipes()
   }, [])
 
+  const todayEnd = endOfDay(new Date())
+
+const activeRecipes = useMemo(
+  () => recipes.filter((r) => {
+    try {
+      return new Date(r.until).getTime() >= todayEnd.getTime()
+    } catch {
+      return false
+    }
+  }),
+  [recipes]
+)
+
+const expiredRecipes = useMemo(
+  () => recipes.filter((r) => {
+    try {
+      return new Date(r.until).getTime() < todayEnd.getTime()
+    } catch {
+      return true
+    }
+  }),
+  [recipes]
+)
+
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Mis Recetas</h1>
-          <p className="text-sm text-muted-foreground">Lista de recetas emitidas por tus médicos. Solo lectura.</p>
+          <p className="text-sm text-muted-foreground">Lista de recetas emitidas por tus médicos. Solo para revisión.</p>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {recipes.map((r) => (
-          <Card key={r.id} className="h-56 flex flex-col overflow-hidden">
-            <CardHeader className="px-4 pt-4 pb-2">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                    {/* Icon */}
-                    {FormatIcon[r.dosageFormat!]}
+<Tabs defaultValue="active" className="space-y-4">
+    <TabsList>
+      <TabsTrigger value="active">Vigentes ({activeRecipes.length})</TabsTrigger>
+      <TabsTrigger value="expired">Vencidas ({expiredRecipes.length})</TabsTrigger>
+    </TabsList>
+
+    <TabsContent value="active" className="pt-4">
+      {activeRecipes.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No hay recetas vigentes.</p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {activeRecipes.map((r) => (
+            <Card key={r.id} className="h-56 flex flex-col overflow-hidden">
+              <CardHeader className="px-4 pt-4 pb-2">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                      {FormatIcon[r.dosageFormat!]}
+                    </div>
+                    <div>
+                      <CardTitle className="text-base">{r.medication}</CardTitle>
+                      <CardDescription className="text-xs text-muted-foreground">
+                        {r.dosage} {r.dosageFormat}
+                      </CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="text-base">{r.medication}</CardTitle>
-                    <CardDescription className="text-xs text-muted-foreground">
-                      {r.dosage} {r.dosageFormat}
-                    </CardDescription>
+
+                  <div className="text-right">
+                    {/* optionally place badge / metadata here */}
                   </div>
                 </div>
+              </CardHeader>
 
-                <div className="text-right">
-                  {/* <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Badge variant="outline" className="rounded">
-                        <Calendar className="h-3.5 w-3.5 mr-2 inline" />
-                        {formatDateISO(r.until)}
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">Válida hasta</TooltipContent>
-                  </Tooltip> */}
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent className="px-4 pb-4 pt-2 flex-1 flex flex-col justify-between">
-              <div className="text-sm text-muted-foreground line-clamp-3">
-                {r.notes ?? "— Sin observaciones —"}
-              </div>
-
-              <div className="flex items-center justify-between mt-4">
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <Repeat className="h-4 w-4" />
-                  <span>{getFrequencyType(r.frequencyType!, r.frequency)}</span>
+              <CardContent className="px-4 pb-4 pt-2 flex-1 flex flex-col justify-between">
+                <div className="text-sm text-muted-foreground line-clamp-3">
+                  {r.notes ?? "— Sin observaciones —"}
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => setActive(r)}>
-                    Ver
-                  </Button>
+                <div className="flex items-center justify-between mt-4">
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <Repeat className="h-4 w-4" />
+                    <span>{getFrequencyType(r.frequencyType!, r.frequency)}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setActive(r)}>
+                      Ver
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </TabsContent>
+
+    <TabsContent value="expired" className="pt-4">
+      {expiredRecipes.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No hay recetas vencidas.</p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {expiredRecipes.map((r) => (
+            <Card key={r.id} className="h-56 flex flex-col overflow-hidden">
+              <CardHeader className="px-4 pt-4 pb-2">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                      {FormatIcon[r.dosageFormat!]}
+                    </div>
+                    <div>
+                      <CardTitle className="text-base">{r.medication}</CardTitle>
+                      <CardDescription className="text-xs text-muted-foreground">
+                        {r.dosage} {r.dosageFormat}
+                      </CardDescription>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    {/* optionally place badge / metadata here */}
+                  </div>
+                </div>
+              </CardHeader>
+
+              <CardContent className="px-4 pb-4 pt-2 flex-1 flex flex-col justify-between">
+                <div className="text-sm text-muted-foreground line-clamp-3">
+                  {r.notes ?? "— Sin observaciones —"}
+                </div>
+
+                <div className="flex items-center justify-between mt-4">
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <Repeat className="h-4 w-4" />
+                    <span>{getFrequencyType(r.frequencyType!, r.frequency)}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setActive(r)}>
+                      Ver
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </TabsContent>
+  </Tabs>
 
       {/* Detail dialog */}
       <Dialog open={Boolean(active)} onOpenChange={() => setActive(null)}>

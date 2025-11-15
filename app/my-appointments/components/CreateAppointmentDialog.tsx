@@ -550,10 +550,12 @@ export const  CreateAppointmentDialog: React.FC<Props> = ({ setAppointments, pat
             {/* STEP 5 - Summary */}
             {step === 5 && (
               <div className="space-y-3">
-                <h3 className="text-lg font-semibold">Resumen de la cita</h3>
-                <p className="text-sm text-muted-foreground">
-                  Verifica que toda la información sea correcta antes de confirmar.
-                </p>
+                <div>
+                  <h3 className="text-lg font-semibold">Resumen de la cita</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Verifica que toda la información sea correcta antes de confirmar.
+                  </p>
+                </div>
 
                 <div className="w-full rounded-lg border bg-muted/30 p-6 space-y-4">
 

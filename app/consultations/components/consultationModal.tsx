@@ -142,6 +142,11 @@ export default function ConsultationModal({
 
                 <Separator />
 
+                <p className="text-xs text-muted-foreground">HEA (Historia de la Enfermedad Actual)</p>
+                <p className="text-sm font-medium whitespace-pre-line">{consultation.observations ?? "—"}</p>
+
+                <Separator />
+
                 <p className="text-xs text-muted-foreground">Diagnóstico</p>
                 <p className="text-sm font-medium whitespace-pre-line">{consultation.diagnosis}</p>
 
@@ -150,11 +155,6 @@ export default function ConsultationModal({
                 <p className="text-xs text-muted-foreground">Tratamiento</p>
                 <p className="text-sm font-medium whitespace-pre-line">{consultation.treatment ?? "—"}</p>
 
-                <Separator />
-
-                <p className="text-xs text-muted-foreground">Observaciones</p>
-                <p className="text-sm font-medium whitespace-pre-line">{consultation.observations ?? "—"}</p>
-                  
               </div>
             </Card>
           </div>
@@ -163,9 +163,6 @@ export default function ConsultationModal({
         <DialogFooter>
           <div className="flex items-center justify-between w-full gap-2">
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                <X className="mr-2 h-4 w-4" /> Cerrar
-              </Button>
 
               <Button
                 variant="ghost"

@@ -57,13 +57,15 @@ export default function MyAppointmentsPage() {
     )
 
   return (
-    <div className="sm:p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-xl font-bold">Citas</h1>
-
+    <div className="sm:p-6 space-y-6">
+      <header className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Mis Citas</h1>
+          <p className="text-sm text-muted-foreground">Lista de citas registradas, aprobadas, completadas y canceladas.</p>
+        </div>
         {/* Dialog for adding new Cita */}
         <CreateAppointmentDialog setAppointments={setAppointments} patientId={patientId}/>
-      </div>
+      </header>
 
       {/* Doctor List */}
       {appointments.length === 0 ? (

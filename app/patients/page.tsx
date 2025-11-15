@@ -12,73 +12,6 @@ import { PatientRecord } from "@/lib/types"
 import { PatientSheet } from "@/components/patientSheet"
 import { Item, ItemActions, ItemContent, ItemDescription, ItemTitle } from "@/components/ui/item"
 
-/**
- * PatientsView
- * - lists patient records (compact items)
- * - action "Revisar expediente" opens a read-only dialog with the record details
- *
- * Assumes `client.models.Patient.list()` exists and returns { data, errors }.
- * Adjust selectionSet to your API model if necessary.
- */
-
-// const patientsSample: PatientRecord[] = [
-//   {
-//     id: "1a2b3c4d",
-//     name: "María López",
-//     email: "maria.lopez@example.com",
-//     birthdate: "1990-05-14",
-//     gender: "Femenino",
-//     cedula: "1234567890",
-//     background: "Hipertensión controlada con medicación.",
-//     allergies: ["Penicilina"],
-//     bloodType: "A+",
-//   },
-//   {
-//     id: "2b3c4d5e",
-//     name: "Carlos Hernández",
-//     email: "carlos.hernandez@example.com",
-//     birthdate: "1985-11-22",
-//     gender: "Masculino",
-//     cedula: "0987654321",
-//     background: "Historial de asma leve en la infancia.",
-//     allergies: null,
-//     bloodType: "O-",
-//   },
-//   {
-//     id: "3c4d5e6f",
-//     name: "Ana Torres",
-//     email: "ana.torres@example.com",
-//     birthdate: "2001-02-09",
-//     gender: "Femenino",
-//     cedula: "1122334455",
-//     background: null,
-//     allergies: ["Mariscos", "Polvo"],
-//     bloodType: "B+",
-//   },
-//   {
-//     id: "4d5e6f7g",
-//     name: "Jorge Ramírez",
-//     email: "jorge.ramirez@example.com",
-//     birthdate: "1978-09-30",
-//     gender: "Masculino",
-//     cedula: "5566778899",
-//     background: "Diabético tipo II desde 2015.",
-//     allergies: [],
-//     bloodType: "AB-",
-//   },
-//   {
-//     id: "5e6f7g8h",
-//     name: "Patricia Gómez",
-//     email: "patricia.gomez@example.com",
-//     birthdate: "1995-03-18",
-//     gender: "Otro",
-//     cedula: "6677889900",
-//     background: "Sin antecedentes relevantes.",
-//     allergies: null,
-//     bloodType: null,
-//   },
-// ]
-
 
 export default function PatientsPage() {
   const [patients, setPatients] = useState<PatientRecord[]>([])
@@ -91,10 +24,7 @@ export default function PatientsPage() {
     const loadPatients = async () => {
       setLoading(true)
       try {
-        // await setTimeout(() => {
-        //   setPatients(patientsSample)
-        // }, 500);
-        const { data, errors } = await client.models.Patient.list({ selectionSet: ["id", "name", "cedula", "email", "birthdate", "gender", "bloodType", "background", "allergies"] })
+        const { data, errors } = await client.models.Patient.list({ selectionSet: ["id", "name", "cedula", "email", "birthdate", "gender", "bloodType", "background", "allergies", "exams"] })
         if (errors) console.error(errors)
         else setPatients(data ?? [])
       } catch (err) {

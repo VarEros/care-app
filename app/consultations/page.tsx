@@ -168,7 +168,7 @@ export default function ConsultationsPage() {
   useEffect(() => {
     if (!appointment) return
     const loadExpedient = async() => {
-      const { data, errors } = await client.models.Patient.get({id: appointment!.patientId}, {selectionSet: ["email", "birthdate", "gender", "bloodType", "background", "allergies"]})
+      const { data, errors } = await client.models.Patient.get({id: appointment!.patientId}, {selectionSet: ["email", "birthdate", "gender", "bloodType", "background", "allergies", "exams"]})
       if (errors) console.error(errors)
       else setPatient({...data!, name: appointment!.patient.name, cedula: appointment!.patient.cedula, id: appointment!.patientId})
     }
@@ -347,6 +347,21 @@ export default function ConsultationsPage() {
                         )}
                       />
 
+                      {/* HEA */}
+                      <FormField
+                        control={form.control}
+                        name="observations"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>HEA (Historia de la Enfermedad Actual)</FormLabel>
+                            <FormControl>
+                              <Textarea placeholder="Notas adicionales..." {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
                       {/* Diagnosis */}
                       <FormField
                         control={form.control}
@@ -371,21 +386,6 @@ export default function ConsultationsPage() {
                             <FormLabel>Tratamiento</FormLabel>
                             <FormControl>
                               <Textarea placeholder="Ej: Analgésicos y descanso" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      {/* Observations */}
-                      <FormField
-                        control={form.control}
-                        name="observations"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Observaciones</FormLabel>
-                            <FormControl>
-                              <Textarea placeholder="Notas adicionales..." {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

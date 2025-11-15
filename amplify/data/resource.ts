@@ -80,7 +80,7 @@ export const schema = a.schema({
       name: a.string().required(),
       birthdate: a.date().required(),
       gender: genders,
-      exams: a.string(),
+      exams: a.string().required().array(),
       background: a.string(),
       allergies: a.string().array(),
       bloodType: bloodTypes,

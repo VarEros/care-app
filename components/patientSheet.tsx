@@ -2,10 +2,14 @@
 
 import { useEffect, useState } from "react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { Loader2 } from "lucide-react"
+import { FileText, ImageIcon, Loader2 } from "lucide-react"
 import { PatientRecord } from "@/lib/types"
 import { client } from "@/lib/amplifyClient"
 import { Nullable } from "@aws-amplify/data-schema"
+import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "./ui/item"
+import { Button } from "./ui/button"
+import { getUrl } from "aws-amplify/storage"
+import { toast } from "sonner"
 
 interface PatientSheetProps {
   open: boolean
@@ -38,6 +42,22 @@ export function PatientSheet({ open, setOpen, patient }: PatientSheetProps) {
     }
     loadBiometric()
   }, [patient])
+
+  const handleView = async (key: string) => {
+    try {
+      // retrieve signed url (protected level)
+      const data = await getUrl({
+        path: `patients/${patient!.id}/exams/${key}`,
+      });
+      // open new tab
+      console.log(data.url)
+      // open href
+      window.open(data.url.href, "_blank");
+    } catch (err) {
+      console.error("Failed to get file url:", err)
+      toast.error("No se pudo obtener el archivo. Verifica permisos/configuración de Storage.")
+    }
+  }
   
   return (
     <Sheet
@@ -168,6 +188,48 @@ export function PatientSheet({ open, setOpen, patient }: PatientSheetProps) {
                 No hay datos biométricos recientes.
               </div>
             )}
+            {/* Exams */}
+            <div className="border-t pt-4">
+              <p className="text-sm font-semibold mb-3">Exámenes</p>
+
+              {patient.exams && patient.exams.length > 0 ? (
+                <ul className="divide-y divide-border">
+                  {patient.exams.map((key) => {
+                    const filename = key.split("/").pop() ?? key
+                    const isImage = /\.(jpg|jpeg|png)$/i.test(filename)
+                    const extension = filename.split(".").pop() ?? "desconocida"
+
+                    return (
+                      <li key={key} className="py-3">
+                        <Item variant="outline">
+                          <ItemMedia variant="icon" className="bg-muted/40 rounded-md">
+                            {isImage ? <ImageIcon className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
+                          </ItemMedia>
+
+                          <ItemContent>
+                            <ItemTitle className="truncate">{filename}</ItemTitle>
+                            <ItemDescription className="text-sm">
+                              Formato: {isImage ? "Imagen" : "Documento"} — Extensión: {extension}
+                            </ItemDescription>
+                          </ItemContent>
+
+                          <ItemActions>
+                            <div className="flex items-center gap-2">
+                              <Button variant="ghost" size="sm" onClick={() => handleView(key)}>
+                                Ver
+                              </Button>
+                            </div>
+                          </ItemActions>
+                        </Item>
+                      </li>
+                    )
+                  })}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">No hay exámenes registrados.</p>
+              )}
+            </div>
+
           </div>
 
         ) : (
